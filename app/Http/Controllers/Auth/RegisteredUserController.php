@@ -38,7 +38,7 @@ class RegisteredUserController extends Controller
             'profile_completed' => false,
         ]);
 
-        event(new Registered($user));
+        //event(new Registered($user));
 
         Auth::login($user);
 
