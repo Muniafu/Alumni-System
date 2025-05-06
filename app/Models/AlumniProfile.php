@@ -14,17 +14,20 @@ class AlumniProfile extends Model
         'user_id',
         'graduation_year',
         'current_position',
+        'industry',
         'phone',
         'bio',
         'linkedin_url',
         'github_url',
         'portfolio_url',
-        'skills'
+        'skills',
+        'privacy_settings'
     ];
 
     protected $casts = [
         'skills' => 'array',
         'graduation_year' => 'integer',
+        'privacy_settings' => 'array'
     ];
 
     public function user()
@@ -34,7 +37,17 @@ class AlumniProfile extends Model
 
     public function skills()
     {
-        return $this->belongsToMany(Skill::class);
+        return $this->belongsToMany(Skill::class, 'alumni_profile_skill');
+    }
+    
+    public function experiences()
+    {
+        return $this->hasMany(Experience::class);
+    }
+
+    public function jobApplications()
+    {
+        return $this->hasManyThrough(JobApplication::class, User::class);
     }
 
 }

@@ -8,7 +8,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, HasApiTokens;
@@ -46,6 +46,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'profile_completed' => 'boolean',
             'password' => 'hashed',
         ];
     }    
@@ -79,5 +80,32 @@ class User extends Authenticatable
     public function employerProfile()
     {
         return $this->hasOne(EmployerProfile::class);
+    }    
+
+    public function experiences()
+    {
+        return $this->hasManyThrough(Experience::class, AlumniProfile::class);
+    }
+
+    public function postedJobs()
+    {
+        return $this->hasMany(JobPosting::class, 'employer_id');
+    }
+
+    public function jobApplications()
+    {
+        return $this->hasMany(JobApplication::class, 'alumni_id');
+    }
+
+    public function organizedEvents()
+    {
+        return $this->hasMany(Event::class, 'organizer_id');
+    }
+
+    public function attendedEvents()
+    {
+        return $this->belongsToMany(Event::class, 'event_attendees')
+            ->withPivot('status', 'feedback')
+            ->withTimestamps();
     }
 }
