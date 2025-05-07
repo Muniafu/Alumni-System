@@ -10,13 +10,17 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
+        "algolia/algoliasearch-client-php": "*",
         "consoletvs/charts": "*",
         "laravel/framework": "^12.0",
+        "laravel/jetstream": "*",
         "laravel/sanctum": "^4.1",
+        "laravel/scout": "*",
         "laravel/socialite": "^5.20",
         "laravel/tinker": "^2.10.1",
-        "livewire/livewire": "^3.6",
-        "livewire/volt": "^1.7.0"
+        "livewire/livewire": "*",
+        "livewire/volt": "^1.7.0",
+        "spatie/icalendar-generator": "^3.0"
     },
     "require-dev": {
         "barryvdh/laravel-ide-helper": "^3.5",

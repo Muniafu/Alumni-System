@@ -4,11 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Laravel\Scout\Searchable;
 
 class AlumniProfile extends Model
 {
     
-    use HasFactory;
+    use HasFactory, Searchable;
 
     protected $fillable = [
         'user_id',
@@ -53,6 +54,21 @@ class AlumniProfile extends Model
         public function certificates()
     {
         return $this->hasMany(Certificate::class);
+    }
+    
+    public function toSearchableArray()
+    {
+        return [
+            'graduation_year' => $this->graduation_year,
+            'current_position' => $this->current_position,
+            'industry' => $this->industry,
+            'skills' => $this->skills,
+            'user' => [
+                'name' => $this->user->name,
+                'email' => $this->user->email,
+                'location' => $this->user->location
+            ]
+        ];
     }
 
 }

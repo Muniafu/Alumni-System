@@ -2,3 +2,31 @@
 @tailwind components;
 @tailwind utilities;
 @import 'bootstrap';
+
+/* Map container */
+#alumniMap {
+    height: 500px;
+    width: 100%;
+    border-radius: 8px;
+}
+
+/* Job and alumni cards */
+.card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+
+/* Skill badges */
+.badge {
+    margin-right: 4px;
+    margin-bottom: 4px;
+}
+
+/* Filter collapse transition */
+.collapse {
+    transition: all 0.3s ease;
+}

@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Spatie\IcalendarGenerator\Components\Calendar;
+use Spatie\IcalendarGenerator\Components\Event as IcalEvent;
 
 class Event extends Model
 {    
@@ -38,6 +40,18 @@ class Event extends Model
         return $this->belongsToMany(User::class, 'event_attendees')
             ->withPivot('status', 'feedback')
             ->withTimestamps();
+    }
+
+    public function toICalendar()
+    {
+        return Calendar::create($this->title)
+            ->event(IcalEvent::create($this->title)
+                ->startsAt($this->start_time)
+                ->endsAt($this->end_time)
+                ->address($this->location)
+                ->description($this->description)
+            )
+            ->get();
     }
 
 }
