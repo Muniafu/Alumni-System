@@ -38,6 +38,11 @@ class RegisteredUserController extends Controller
             'profile_completed' => false,
         ]);
 
+        return User::create([
+            // ... other fields ...
+            'email_verified_at' => now(), // Auto-verify
+        ]);
+
         //event(new Registered($user));
 
         Auth::login($user);

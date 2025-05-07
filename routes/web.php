@@ -34,3 +34,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ]);
     })->name('dashboard');
 });
+
+Route::get('/dashboard', \App\Livewire\Dashboard::class)
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
+
+Route::get('/profile', \App\Livewire\ProfileForm::class)
+    ->middleware(['auth', 'verified'])
+    ->name('profile');

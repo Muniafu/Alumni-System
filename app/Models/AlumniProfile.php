@@ -32,7 +32,7 @@ class AlumniProfile extends Model
 
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function skills()
@@ -48,6 +48,11 @@ class AlumniProfile extends Model
     public function jobApplications()
     {
         return $this->hasManyThrough(JobApplication::class, User::class);
+    }
+
+        public function certificates()
+    {
+        return $this->hasMany(Certificate::class);
     }
 
 }

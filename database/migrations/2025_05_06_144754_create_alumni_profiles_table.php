@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('alumni_profiles', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('user_id')->constrained()->unique()->cascadeOnDelete();
             $table->year('graduation_year');
             $table->string('current_position');
             $table->string('industry');

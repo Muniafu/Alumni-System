@@ -8,6 +8,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
+
 class User extends Authenticatable /** implements MustVerifyEmail*/
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
@@ -74,7 +75,7 @@ class User extends Authenticatable /** implements MustVerifyEmail*/
 
     public function alumniProfile()
     {
-        return $this->hasOne(AlumniProfile::class);
+        return $this->hasOne(AlumniProfile::class, 'user_id');
     }
 
     public function employerProfile()
@@ -108,4 +109,10 @@ class User extends Authenticatable /** implements MustVerifyEmail*/
             ->withPivot('status', 'feedback')
             ->withTimestamps();
     }
+
+    public function certificates()
+    {
+        return $this->hasManyThrough(Certificate::class, AlumniProfile::class);
+    }
+    
 }
