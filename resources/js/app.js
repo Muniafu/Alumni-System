@@ -1,5 +1,10 @@
 import 'bootstrap';
 import Chart from 'chart.js/auto';
+import focus from '@alpinejs/focus';
+
+window.Alpine = Alpine;
+Alpine.plugin(focus);
+Alpine.start();
 window.Chart = Chart;
 
 document.addEventListener('DOMContentLoaded', function() {

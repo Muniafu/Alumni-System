@@ -30,3 +30,22 @@
 .collapse {
     transition: all 0.3s ease;
 }
+
+.card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border: 1px solid rgba(0,0,0,.125);
+}
+
+.card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 0.5rem 1rem rgba(0,0,0,.15);
+}
+
+.list-group-item {
+    border-left: 0;
+    border-right: 0;
+}
+
+.list-group-item:first-child {
+    border-top: 0;
+}

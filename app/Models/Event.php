@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Spatie\IcalendarGenerator\Components\Calendar;
 use Spatie\IcalendarGenerator\Components\Event as IcalEvent;
@@ -52,6 +53,12 @@ class Event extends Model
                 ->description($this->description)
             )
             ->get();
+    }
+
+    public function scopeUpcoming(Builder $query)
+    {
+        return $query->where('start_time', '>', now())
+            ->orderBy('start_time');
     }
 
 }

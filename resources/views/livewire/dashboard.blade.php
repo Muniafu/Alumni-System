@@ -1,71 +1,80 @@
-<div class="container-fluid py-4" x-data>
+<div class="container-fluid py-4">
+    <!-- Role-based Header -->
     <div class="row mb-4">
-        <div class="col-md-3">
-            <select wire:model.live="selectedYear" class="form-select">
-                <option value="">All Graduation Years</option>
-                @foreach($years as $year)
-                    <option value="{{ $year }}">{{ $year }}</option>
-                @endforeach
-            </select>
-        </div>
-    </div>
-
-    <div class="row row-cols-1 row-cols-md-4 g-4 mb-4">
-        <div class="col">
-            <div class="card h-100">
-                <div class="card-body">
-                    <h5 class="card-title">Total Alumni</h5>
-                    <h2 class="display-4">{{ $stats['total_alumni'] }}</h2>
-                </div>
-            </div>
-        </div>
-        <!-- Repeat for other stats -->
-    </div>
-
-    <div class="row mb-4">
-        <div class="col-md-8">
-            <div class="card h-100">
-                <div class="card-body">
-                    <h5 class="card-title">Alumni Distribution</h5>
-                    <div wire:ignore>
-                        <canvas id="graduationChart" x-init="
-                            new Chart($el, {
-                                type: 'bar',
-                                data: {
-                                    labels: {{ json_encode($chartData['labels']) }},
-                                    datasets: [{
-                                        label: 'Alumni by Graduation Year',
-                                        data: {{ json_encode($chartData['values']) }},
-                                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                                        borderColor: 'rgba(54, 162, 235, 1)',
-                                        borderWidth: 1
-                                    }]
-                                },
-                                options: { responsive: true }
-                            });
-                        "></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-md-4">
-            <div class="card h-100">
-                <div class="card-body">
-                    <h5 class="card-title">Recent Events</h5>
-                    <div class="list-group">
-                        @foreach($recentEvents as $event)
-                            <a href="#" class="list-group-item list-group-item-action">
-                                <div class="d-flex w-100 justify-content-between">
-                                    <h6 class="mb-1">{{ $event->title }}</h6>
-                                    <small>{{ $event->start_time->diffForHumans() }}</small>
-                                </div>
-                                <small>{{ $event->location }}</small>
-                            </a>
+        <div class="col-12">
+            <h2 class="mb-0">
+                @switch($role)
+                    @case('admin') Administrator Dashboard @break
+                    @case('employer') Employer Portal @break
+                    @case('alumni') My Alumni Dashboard @break
+                @endswitch
+            </h2>
+            
+            @if($role === 'admin')
+            <div class="row mt-3">
+                <div class="col-md-3">
+                    <select wire:model="selectedYear" class="form-select">
+                        <option value="">All Graduation Years</option>
+                        @foreach($years as $year)
+                            <option value="{{ $year }}">{{ $year }}</option>
                         @endforeach
+                    </select>
+                </div>
+            </div>
+            @endif
+        </div>
+    </div>
+
+    <!-- Metrics Cards -->
+    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-4 g-4 mb-4">
+        @foreach($metrics as $key => $value)
+            <div class="col">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title text-uppercase text-muted small mb-1">
+                            {{ str_replace('_', ' ', $key) }}
+                        </h5>
+                        <h2 class="mb-0">{{ $value }}</h2>
                     </div>
                 </div>
             </div>
+        @endforeach
+    </div>
+
+    <!-- Chart Section -->
+    @if($role === 'admin')
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <livewire:livewire-column-chart
+                        :column-chart-model="$chart"
+                    />
+                </div>
+            </div>
         </div>
+    </div>
+    @endif
+
+    <!-- Recent Activity Section -->
+    <div class="row g-4">
+        @foreach($recentData as $type => $items)
+            @if($items->isNotEmpty())
+            <div class="col-md-6">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header">
+                        <h5 class="mb-0">Recent {{ ucfirst($type) }}</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="list-group list-group-flush">
+                            @foreach($items as $item)
+                                @include("dashboard.recent-{$type}-item", ['item' => $item])
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @endif
+        @endforeach
     </div>
 </div>

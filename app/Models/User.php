@@ -143,4 +143,17 @@ class User extends Authenticatable /** implements MustVerifyEmail*/
             'privacy_settings' => ['all' => 'private']
         ]);
     }
+
+    public function connections()
+    {
+        return $this->belongsToMany(User::class, 'user_connections', 'user_id', 'connection_id')
+            ->withTimestamps();
+    }
+
+    public function pendingConnectionRequests()
+    {
+        return $this->hasMany(ConnectionRequest::class, 'receiver_id')
+            ->where('status', 'pending');
+}
+
 }
