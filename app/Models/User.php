@@ -26,6 +26,9 @@ class User extends Authenticatable /** implements MustVerifyEmail*/
         'role',
         'profile_completed',
         'google_id',
+        'gdpr_consent_at',
+        'data_exported_at',
+        'data_deleted_at'
     ];
 
     /**
@@ -115,4 +118,29 @@ class User extends Authenticatable /** implements MustVerifyEmail*/
         return $this->hasManyThrough(Certificate::class, AlumniProfile::class);
     }
     
+    public function exportData()
+    {
+        return [
+            'profile' => $this->alumniProfile,
+            'endorsements' => $this->endorsementsReceived,
+            'ratings' => $this->employerRatings,
+            'connections' => $this->connections
+        ];
+    }
+
+    public function anonymize()
+    {
+        $this->update([
+            'name' => 'Deleted User',
+            'email' => md5($this->email).'@deleted.user',
+            'gdpr_consent_at' => null,
+            'data_deleted_at' => now()
+        ]);
+        
+        $this->alumniProfile()->update([
+            'bio' => null,
+            'phone' => null,
+            'privacy_settings' => ['all' => 'private']
+        ]);
+    }
 }
