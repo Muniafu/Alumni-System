@@ -65,6 +65,10 @@ class RegisteredUserController extends Controller
 
         // Assign role dynamically
         if ($isFirstUser) {
+            $user->forceFill([
+                'is_approved' => true, // Ensure first user is approved
+                'approved_at' => now(), // Set approved_at timestamp
+            ])->save();
             $adminRole = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
             $user->assignRole($adminRole);
         } else {

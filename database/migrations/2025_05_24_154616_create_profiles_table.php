@@ -22,9 +22,9 @@ return new class extends Migration
             $table->text('bio')->nullable();
 
             // Comma-separated fields instead of JSON
-            $table->text('skills')->nullable()->default('');
-            $table->text('interests')->nullable()->default('');
-            $table->text('social_links')->nullable()->default('');
+            $table->text('skills')->nullable();
+            $table->text('interests')->nullable();
+            $table->text('social_links')->nullable();
 
             $table->unsignedTinyInteger('profile_completion')->default(0);
 

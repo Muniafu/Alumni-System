@@ -10,6 +10,7 @@ class UserObserver
     /**
      * Handle the User "created" event.
      */
+    /*
     public function created(User $user)
     {
         ActivityLog::create([
@@ -21,6 +22,7 @@ class UserObserver
         ]);
 
     }
+    */
 
     /**
      * Handle the User "updated" event.
@@ -31,14 +33,22 @@ class UserObserver
         unset($changes['updated_at']); // Exclude timestamp from changes
 
         if (!empty($changes)) {
+            return;
+        }
+
+        $actorId = auth()->id();
+
+        if ($actorId || !user::where('id', $actorId)->exists()) {
+            $actorId = $user->id;
+        }
             ActivityLog::create([
-                'user_id' => auth()->id() ?? $user->id,
+                'user_id' => $actorId, // Use the user's ID if no authenticated user
                 'action' => 'updated',
                 'description' => 'User account updated: ' . json_encode($changes),
                 'model_type' => User::class,
                 'model_id' => $user->id,
             ]);
-        }
+        
     }
 
     /**
