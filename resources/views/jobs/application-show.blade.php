@@ -56,13 +56,13 @@
                 <!-- Resume Download -->
                 <h4 class="text-dark fw-semibold mb-3">Resume</h4>
                 <div class="mb-4">
-                    <a href="{{ route('jobs.downloadResume', $application) }}"class="btn btn-primary">
+                    <a href="{{ route('jobs.downloadResume', $application) }}" class="btn btn-primary">
                         <i class="fa-solid fa-download me-2"></i> Download Resume
                     </a>
                 </div>
 
                 <!-- Update Status Form (if authorized) -->
-                @can('updateApplication', $application)
+                @can('update', $application)
                 <div class="mt-4">
                     <h4 class="text-dark fw-semibold mb-3">Update Status</h4>
                     <form action="{{ route('jobs.applications.update', [$job, $application]) }}" method="POST">

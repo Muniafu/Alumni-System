@@ -6,55 +6,46 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        Schema::create('job_postings', function (Blueprint $table) {
+        Schema::create('jobs', function (Blueprint $table) {
             $table->id();
-            $table->string('title');
-            $table->text('description');
-            $table->enum('type', ['job', 'internship', 'mentorship']);
-            $table->string('company');
-            $table->string('location');
-            $table->boolean('is_remote')->default(false);
-            $table->string('salary_range')->nullable();
-            $table->string('employment_type')->nullable();
-            $table->date('application_deadline')->nullable();
-            $table->string('contact_email');
-            $table->string('contact_phone')->nullable();
-            $table->string('website')->nullable();
-            $table->json('skills_required')->nullable();
-            $table->json('skills_preferred')->nullable();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->boolean('is_active')->default(true);
-            $table->timestamps();
-            $table->softDeletes();
+            $table->string('queue')->index();
+            $table->longText('payload');
+            $table->unsignedTinyInteger('attempts');
+            $table->unsignedInteger('reserved_at')->nullable();
+            $table->unsignedInteger('available_at');
+            $table->unsignedInteger('created_at');
         });
 
-
-        Schema::create('job_applications', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('job_posting_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->text('cover_letter');
-            $table->string('resume_path');
-            $table->enum('status', ['submitted', 'reviewed', 'interviewed', 'rejected', 'hired'])->default('submitted');
-            $table->text('notes')->nullable();
-            $table->timestamps();
-
-            $table->unique(['job_posting_id', 'user_id']);
+        Schema::create('job_batches', function (Blueprint $table) {
+            $table->string('id')->primary();
+            $table->string('name');
+            $table->integer('total_jobs');
+            $table->integer('pending_jobs');
+            $table->integer('failed_jobs');
+            $table->longText('failed_job_ids');
+            $table->mediumText('options')->nullable();
+            $table->integer('cancelled_at')->nullable();
+            $table->integer('created_at');
+            $table->integer('finished_at')->nullable();
         });
 
+        Schema::create('failed_jobs', function (Blueprint $table) {
+            $table->id();
+            $table->string('uuid')->unique();
+            $table->text('connection');
+            $table->text('queue');
+            $table->longText('payload');
+            $table->longText('exception');
+            $table->timestamp('failed_at')->useCurrent();
+        });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::dropIfExists('job_postings');
-        Schema::dropIfExists('job_applications');
+        Schema::dropIfExists('jobs');
+        Schema::dropIfExists('job_batches');
+        Schema::dropIfExists('failed_jobs');
     }
 };

@@ -10,11 +10,12 @@
 <div class="container-fluid py-4">
     <div class="card shadow-sm border-0">
         <div class="card-body">
+
             {{-- Success Message --}}
             @if(session('success'))
                 <div class="alert alert-success alert-dismissible fade show" role="alert">
                     <i class="bi bi-check-circle-fill me-2"></i> {{ session('success') }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    <button type="type" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
             @endif
 
@@ -100,7 +101,7 @@
                                                 </form>
 
                                                 {{-- Reject --}}
-                                                <<form action="{{ route('admin.reject-user', $user) }}" method="POST">
+                                                <form action="{{ route('admin.reject-user', $user) }}" method="POST">
                                                     @csrf
                                                     <button type="submit" class="btn btn-sm btn-outline-danger">
                                                         <i class="bi bi-x-lg me-1"></i> Reject

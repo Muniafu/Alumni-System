@@ -8,7 +8,6 @@ use App\Models\ActivityLog;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
-use Illuminate\Validation\Rules;
 use App\Models\Event;
 use App\Models\EventRsvp;
 use App\Models\ForumPost;
@@ -68,13 +67,11 @@ class AdminController extends Controller
         // -----------------------------
         // Event Statistics
         // -----------------------------
-        $eventsWithRsvps = Event::has('rsvps')->withCount('rsvps')->get();
-
         $eventStats = [
             'total' => Event::count(),
-            'upcoming' => Event::where('start', '>=', now())->count(), // Assume 'start' field
+            'upcoming' => Event::where('start', '>=', now())->count(),
             'past' => Event::where('start', '<', now())->count(),
-            'rsvps' => EventRsvp::count(), // Assume model
+            'rsvps' => EventRsvp::count(),
             'avg_attendance' => Event::withCount('rsvps')->get()->avg('rsvps_count') ?? 0,
         ];
 
@@ -91,7 +88,7 @@ class AdminController extends Controller
         // -----------------------------
         $jobStats = [
             'total' => JobPosting::count(),
-            'active' => JobPosting::where('application_deadline', '>=', now())->count(), // Assume 'deadline'
+            'active' => JobPosting::where('application_deadline', '>=', now())->count(),
             'applications' => JobApplication::count(),
             'avg_applications' => JobPosting::withCount('applications')->get()->avg('applications_count') ?? 0,
         ];
@@ -114,7 +111,7 @@ class AdminController extends Controller
         ];
 
         // -----------------------------
-        // Mentorship Statistics (New in 2025 update)
+        // Mentorship Statistics
         // -----------------------------
         $mentorshipStats = [
             'total' => Mentorship::count(),
@@ -134,11 +131,6 @@ class AdminController extends Controller
             ->sortByDesc('created_at')
             ->take(5);
 
-
-
-        // -----------------------------
-        // Return view with all data
-        // -----------------------------
         return view('admin.dashboard', compact(
             'userCounts',
             'userGrowth',
@@ -154,8 +146,6 @@ class AdminController extends Controller
 
     public function showUser(User $user)
     {
-        $permissions = Permission::all();
-
         return view('admin.user-show', compact('user'));
     }
 
@@ -172,11 +162,8 @@ class AdminController extends Controller
     {
         Gate::authorize('approve-users');
 
-        $user->update([
-            'is_approved' => true,
-            'approved_by' => auth()->id(),
-            'approved_at' => now(),
-        ]);
+        // Uses forceFill internally — is_approved* fields are not fillable
+        $user->approve(auth()->user());
 
         ActivityLog::create([
             'user_id' => auth()->id(),
@@ -197,7 +184,6 @@ class AdminController extends Controller
     {
         Gate::authorize('approve-users');
 
-
         ActivityLog::create([
             'user_id' => auth()->id(),
             'action' => 'reject',
@@ -212,7 +198,6 @@ class AdminController extends Controller
         // Delete user after notification
         $user->delete();
 
-
         return redirect()->route('admin.pending-approvals')
             ->with('success', 'User rejected successfully');
     }
@@ -222,11 +207,10 @@ class AdminController extends Controller
         Gate::authorize('manage-users');
 
         $users = User::with('roles')->approved()->get();
-        $roles = Role::all(); // Fetches roles for the dropdown
+        $roles = Role::all();
 
         return view('admin.user-management', compact('users', 'roles'));
     }
-
 
     public function createUser()
     {
@@ -248,6 +232,8 @@ class AdminController extends Controller
 
     public function bulkAction(Request $request)
     {
+        Gate::authorize('manage-users');
+
         $action = $request->input('action');
         $userIds = $request->input('selected_users', []);
 
@@ -270,6 +256,8 @@ class AdminController extends Controller
 
     public function bulkApproval(Request $request)
     {
+        Gate::authorize('approve-users');
+
         $action = $request->input('action');
         $userIds = $request->input('selected_users', []);
 
@@ -277,14 +265,11 @@ class AdminController extends Controller
             return back()->with('error', 'No users selected.');
         }
 
-        if ($action === 'approve') {
-            User::whereIn('id', $userIds)->update([
-                'is_approved' => true,
-                'approved_by' => auth()->id(),
-                'approved_at' => now(),
-            ]);
+        $users = User::whereIn('id', $userIds)->get();
 
-            foreach (User::whereIn('id', $userIds)->get() as $user) {
+        if ($action === 'approve') {
+            foreach ($users as $user) {
+                $user->approve(auth()->user());
                 $user->notify(new UserApprovedNotification());
             }
 
@@ -292,8 +277,6 @@ class AdminController extends Controller
         }
 
         if ($action === 'reject') {
-            $users = User::whereIn('id', $userIds)->get();
-
             foreach ($users as $user) {
                 $user->notify(new UserRejectedNotification());
                 $user->delete();
@@ -426,6 +409,8 @@ class AdminController extends Controller
 
     public function restoreUser($id)
     {
+        Gate::authorize('manage-users');
+
         $user = User::withTrashed()->findOrFail($id);
         $user->restore();
 
@@ -464,11 +449,16 @@ class AdminController extends Controller
         $role = Role::findOrFail($request->role_id);
         $role->syncPermissions($request->permissions ?? []);
 
-
         return back()->with('success', 'Permissions updated successfully');
     }
 
-    // Event Management Functions
+    /*
+    |----------------------------------------------------------------
+    | Reporting / oversight views (not yet wired to routes — Phase 9
+    | will either route these or remove them)
+    |----------------------------------------------------------------
+    */
+
     public function eventsIndex()
     {
         Gate::authorize('generate-reports');
@@ -485,39 +475,11 @@ class AdminController extends Controller
         return view('admin.events.create');
     }
 
-    public function eventsStore(Request $request)
-    {
-        Gate::authorize('create-events');
-
-        // Validation and creation logic (delegate to EventController if possible, but for admin-specific)
-        $validated = $request->validate([
-            // Same as EventController::store
-        ]);
-
-        $event = Event::create($validated + ['user_id' => auth()->id()]);
-
-        return redirect()->route('admin.events.index')->with('success', 'Event created');
-    }
-
     public function eventsEdit(Event $event)
     {
         Gate::authorize('update', $event);
 
         return view('admin.events.edit', compact('event'));
-    }
-
-    public function eventsUpdate(Request $request, Event $event)
-    {
-        Gate::authorize('update', $event);
-
-        // Validation and update
-        $validated = $request->validate([
-            // Same as EventController::update
-        ]);
-
-        $event->update($validated);
-
-        return redirect()->route('admin.events.index')->with('success', 'Event updated');
     }
 
     public function eventsDestroy(Event $event)
@@ -529,7 +491,6 @@ class AdminController extends Controller
         return redirect()->route('admin.events.index')->with('success', 'Event deleted');
     }
 
-    // New: Job Management Functions (similar structure)
     public function jobsIndex()
     {
         Gate::authorize('generate-reports');
@@ -539,9 +500,6 @@ class AdminController extends Controller
         return view('admin.jobs.index', compact('jobs'));
     }
 
-    // Add create, store, edit, update, destroy for jobs similarly
-
-    // New: Forum Management
     public function forumsIndex()
     {
         Gate::authorize('generate-reports');
@@ -551,9 +509,6 @@ class AdminController extends Controller
         return view('admin.forums.index', compact('threads'));
     }
 
-    // Add moderation functions like lock thread, delete post, etc.
-
-    // New: Mentorship Management
     public function mentorshipsIndex()
     {
         Gate::authorize('generate-reports');
@@ -563,9 +518,6 @@ class AdminController extends Controller
         return view('admin.mentorships.index', compact('mentorships'));
     }
 
-    // Add update status, etc.
-
-    // New: Messaging Oversight (e.g., view all conversations for moderation)
     public function messagesIndex()
     {
         Gate::authorize('generate-reports');
@@ -574,5 +526,4 @@ class AdminController extends Controller
 
         return view('admin.messages.index', compact('conversations'));
     }
-
 }

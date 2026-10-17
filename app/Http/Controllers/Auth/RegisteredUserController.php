@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\Rules;
 use Illuminate\View\View;
 use Spatie\Permission\Models\Role;
@@ -44,7 +45,7 @@ class RegisteredUserController extends Controller
             'program' => ['required', 'string', 'max:255'],
         ]);
 
-        // Check if first user
+        // Check if first user (bootstrap admin)
         $isFirstUser = User::count() === 0;
 
         // Generate Student ID
@@ -52,7 +53,9 @@ class RegisteredUserController extends Controller
             ? 'ADMIN001'
             : 'STU' . date('Y') . mt_rand(1000, 9999);
 
-        // Create user
+        // SECURITY: is_approved is NOT fillable on the User model.
+        // Every user starts unapproved. The bootstrap admin is approved
+        // explicitly below via approve() (which uses forceFill).
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
@@ -60,19 +63,15 @@ class RegisteredUserController extends Controller
             'student_id' => $studentId,
             'graduation_year' => $request->graduation_year,
             'program' => $request->program,
-            'is_approved' => $isFirstUser, // first user auto-approved
         ]);
 
-        // Assign role dynamically
+        // Assign role
         if ($isFirstUser) {
-            $user->forceFill([
-                'is_approved' => true, // Ensure first user is approved
-                'approved_at' => now(), // Set approved_at timestamp
-            ])->save();
+            $user->approve(); // first user is the bootstrap admin: approved immediately
             $adminRole = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
             $user->assignRole($adminRole);
+            $roleName = 'admin';
         } else {
-            // Determine role name
             $roleName = ($request->graduation_year <= date('Y')) ? 'alumni' : 'student';
             $role = Role::firstOrCreate(['name' => $roleName, 'guard_name' => 'web']);
             $user->assignRole($role);
@@ -102,28 +101,28 @@ class RegisteredUserController extends Controller
         ActivityLog::create([
             'user_id' => $user->id,
             'action' => 'register',
-            'description' => 'User registered with role: ' . ($isFirstUser ? 'admin' : $roleName),
+            'description' => 'User registered with role: ' . $roleName,
             'model_type' => User::class,
             'model_id' => $user->id,
         ]);
 
-        // Notify admin if not first user
+        // Notify ALL admins about the new registration (not just the first one)
         if (!$isFirstUser) {
-            $admin = User::role('admin')->first();
-            if ($admin) {
-                $admin->notify(new UserRegisteredNotification($user));
-            }
+            $admins = User::role('admin')->get();
+            Notification::send($admins, new UserRegisteredNotification($user));
         }
 
         event(new Registered($user));
 
         Auth::login($user);
 
-        $message = $isFirstUser
-            ? 'Admin account created. You have full access.'
-            : 'Registration successful! Your account is pending admin approval.';
+        // Send the user to the right place based on approval state
+        if (!$user->is_approved) {
+            return redirect()->route('pending-approval')
+                ->with('success', 'Registration successful! Your account is pending admin approval.');
+        }
 
-        return redirect()->route('dashboard')->with('success', $message);
+        return redirect()->route('dashboard')
+            ->with('success', 'Admin account created. You have full access.');
     }
-
 }

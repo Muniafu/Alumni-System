@@ -10,26 +10,19 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 use Illuminate\Foundation\Auth\Access\Authorizable;
-use App\Models\Profile;
-use App\Models\Mentorship;
-use App\Models\Event;
-use App\Models\JobApplication;
-use App\Models\Conversation;
-use App\Models\Message;
-use App\Models\ForumPost;
 
-/**
- * @method bool hasRole(string|array $roles)
- * @method bool hasAnyRole(array|string $roles)
- * @method bool can(string $ability, array $arguments = [])
- * @property Profile|null $profile
- * @property \Illuminate\Database\Eloquent\Collection|Mentorship[] $mentorships
- * @property \Illuminate\Database\Eloquent\Collection|Mentorship[] $mentorshipRequests
- */
 class User extends Authenticatable implements MustVerifyEmail
 {
     use HasApiTokens, HasFactory, Notifiable, HasRoles, SoftDeletes, Authorizable;
 
+    /**
+     * Mass-assignable fields only.
+     *
+     * SECURITY: is_approved, approved_by and approved_at are deliberately
+     * NOT fillable. Approval state must only ever change through
+     * approve() (called by authorized admin controllers) so that no
+     * request payload can ever self-approve an account.
+     */
     protected $fillable = [
         'name',
         'email',
@@ -37,9 +30,6 @@ class User extends Authenticatable implements MustVerifyEmail
         'student_id',
         'graduation_year',
         'program',
-        'is_approved',
-        'approved_by',
-        'approved_at',
     ];
 
     protected $hidden = [
@@ -52,9 +42,14 @@ class User extends Authenticatable implements MustVerifyEmail
         'password' => 'hashed',
         'is_approved' => 'boolean',
         'approved_at' => 'datetime',
+        'deleted_at' => 'datetime',
     ];
 
-    protected $dates = ['deleted_at'];
+    /*
+    |--------------------------------------------------------------------------
+    | Relationships
+    |--------------------------------------------------------------------------
+    */
 
     public function profile()
     {
@@ -98,6 +93,24 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(Message::class);
     }
 
+    public function events()
+    {
+        return $this->belongsToMany(Event::class, 'event_rsvps')
+            ->withPivot('status', 'guests', 'notes')
+            ->withTimestamps();
+    }
+
+    public function jobApplications()
+    {
+        return $this->hasMany(JobApplication::class);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Scopes
+    |--------------------------------------------------------------------------
+    */
+
     public function scopeRole($query, $role)
     {
         return $query->whereHas('roles', function ($q) use ($role) {
@@ -115,9 +128,25 @@ class User extends Authenticatable implements MustVerifyEmail
         return $query->where('is_approved', true);
     }
 
-    public function unreadNotificationsCount(): int
+    /*
+    |--------------------------------------------------------------------------
+    | Approval
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Approve this user. The single, sanctioned way to flip approval state.
+     *
+     * Uses forceFill() because is_approved/approved_by/approved_at are
+     * intentionally excluded from $fillable.
+     */
+    public function approve(?self $approver = null): void
     {
-        return $this->unreadNotifications()->count();
+        $this->forceFill([
+            'is_approved' => true,
+            'approved_by' => $approver?->id ?? auth()->id(),
+            'approved_at' => now(),
+        ])->save();
     }
 
     public function isApproved(): bool
@@ -125,17 +154,14 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->is_approved;
     }
 
-    public function events()
+    /*
+    |--------------------------------------------------------------------------
+    | Helpers
+    |--------------------------------------------------------------------------
+    */
+
+    public function unreadNotificationsCount(): int
     {
-        return $this->belongsToMany(Event::class, 'event_rsvps')
-                    ->withPivot('status', 'guests', 'notes')
-                    ->withTimestamps();
+        return $this->unreadNotifications()->count();
     }
-
-
-    public function jobApplications()
-    {
-        return $this->hasMany(JobApplication::class);
-    }
-
 }

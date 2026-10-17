@@ -14,8 +14,6 @@ use App\Notifications\JobApplicationNotification;
 use App\Notifications\ApplicationStatusChangedNotification;
 use Illuminate\Support\Facades\Notification;
 
-use function PHPSTORM_META\type;
-
 class JobPostingController extends Controller
 {
     /**
@@ -23,11 +21,10 @@ class JobPostingController extends Controller
      */
     public function index(Request $request)
     {
-        $type =$request->query('type');
+        $type = $request->query('type');
         $query = JobPosting::active()->with('poster')->latest();
 
         if ($type && in_array($type, ['job', 'internship', 'mentorship'])) {
-
             $query->where('type', $type);
             $title = ucfirst($type) . ' Opportunities';
         } else {
@@ -37,7 +34,6 @@ class JobPostingController extends Controller
         $jobs = $query->paginate(10);
 
         return view('jobs.index', compact('jobs', 'title'));
-
     }
 
     /**
@@ -48,7 +44,6 @@ class JobPostingController extends Controller
         Gate::authorize('create', JobPosting::class);
 
         return view('jobs.create');
-
     }
 
     public function show(JobPosting $job)
@@ -118,7 +113,7 @@ class JobPostingController extends Controller
                 throw new \Exception('Failed to save job posting');
             }
 
-            // ✅ Send notifications here
+            // ✅ Send notifications here (queued — see NewJobPostedNotification implements ShouldQueue)
             $recipients = User::query()
                 ->where('is_approved', true)
                 ->whereHas('roles', function ($q) {
@@ -153,7 +148,6 @@ class JobPostingController extends Controller
      */
     public function update(Request $request, JobPosting $job)
     {
-
         $this->authorize('update', $job);
 
         $validated = $request->validate([
@@ -186,7 +180,6 @@ class JobPostingController extends Controller
 
         return redirect()->route('jobs.show', $job)
             ->with('success', 'Job posting updated successfully');
-
     }
 
     /**
@@ -196,10 +189,6 @@ class JobPostingController extends Controller
     {
         Gate::authorize('delete', $job);
 
-        // Store job info before deletion for notification
-        $jobTitle = $job->title;
-        $applicants = $job->applications()->with('applicant')->get();
-
         $job->delete();
 
         return redirect()->route('jobs.index')
@@ -207,7 +196,7 @@ class JobPostingController extends Controller
     }
 
     /**
-     * Apply the specified resource.
+     * Apply to the specified job posting.
      */
     public function apply(Request $request, JobPosting $job)
     {
@@ -254,19 +243,17 @@ class JobPostingController extends Controller
     }
 
     /**
-     * Applications the specified resource.
+     * List applications for the specified job posting.
      */
     public function applications(JobPosting $job)
     {
-
         Gate::authorize('viewApplications', $job);
 
-        $applications = $job->applications()->with(['applicant' => function($query) {
+        $applications = $job->applications()->with(['applicant' => function ($query) {
             $query->with('profile');
         }])->latest()->get();
 
         return view('jobs.applications', compact('job', 'applications'));
-
     }
 
     /**
@@ -286,12 +273,13 @@ class JobPostingController extends Controller
     }
 
     /**
-     * UpdateApplications the specified resource in storage.
-     */
-    /**
      * Update application status.
+     *
+     * Called via PUT /jobs/{job}/applications/{application} — the {job}
+     * route parameter is deliberately not bound here since only the
+     * application is needed.
      */
-    public function updateApplicationStatus(Request $request, JobPosting $job, JobApplication $application)
+    public function updateApplicationStatus(Request $request, JobApplication $application)
     {
         $this->authorize('update', $application);
 
@@ -310,11 +298,14 @@ class JobPostingController extends Controller
         return redirect()->back()->with('success', 'Application status updated');
     }
 
+    /**
+     * Download the resume attached to an application.
+     */
     public function downloadResume(JobApplication $application)
     {
-        $this->authorize('downloadResume', $application); // Only authorized users
+        $this->authorize('downloadResume', $application);
 
-        $disk = Storage::disk('private'); /** @var \Illuminate\Filesystem\FilesystemAdapter $disk */
+        $disk = Storage::disk('private');
 
         if (!$disk->exists($application->resume_path)) {
             abort(404, 'Resume file not found.');
@@ -325,5 +316,4 @@ class JobPostingController extends Controller
             $application->applicant->name . '_resume.' . pathinfo($application->resume_path, PATHINFO_EXTENSION)
         );
     }
-
 }

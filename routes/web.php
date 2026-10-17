@@ -6,7 +6,6 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AlumniController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\ApprovalController;
-use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\JobPostingController;
@@ -19,9 +18,6 @@ use App\Http\Controllers\UserSearchController;
 use App\Http\Controllers\MentorshipController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ReportController;
-use App\Http\Controllers\Auth\PasswordResetLinkController;
-use App\Http\Controllers\Auth\NewPasswordController;
-use App\Http\Controllers\Auth\ConfirmablePasswordController;
 
 /*
 |--------------------------------------------------------------------------
@@ -38,10 +34,14 @@ Route::get('/public/events', [EventController::class, 'publicIndex'])->name('pub
 
 /*
 |--------------------------------------------------------------------------
-| Guest Routes (Auth)
+| Pending Approval
+| (auth required — the controller reads Auth::user(),
+|  so guests get redirected to login instead of a crash)
 |--------------------------------------------------------------------------
 */
-Route::get('/pending-approval', [ApprovalController::class, 'pending'])->name('pending-approval');
+Route::get('/pending-approval', [ApprovalController::class, 'pending'])
+    ->middleware('auth')
+    ->name('pending-approval');
 
 /*
 |--------------------------------------------------------------------------
@@ -67,12 +67,15 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     /*
     |-----------------------------
     | Events
+    | (static calendar routes MUST come before /events/{event}
+    |  or Laravel treats "calendar" as the {event} parameter → 404)
     |-----------------------------
     */
-    Route::resource('events', EventController::class)->except(['show']);
-    Route::get('/events/{event}', [EventController::class, 'show'])->name('events.show');
     Route::get('/events/calendar', [EventController::class, 'calendar'])->name('events.calendar');
     Route::get('/events/calendar/data', [EventController::class, 'getCalendarEvents'])->name('events.calendar.data');
+
+    Route::resource('events', EventController::class)->except(['show']);
+    Route::get('/events/{event}', [EventController::class, 'show'])->name('events.show');
     Route::post('/events/{event}/rsvp', [EventController::class, 'rsvp'])->name('events.rsvp');
     Route::delete('/events/{event}/rsvp', [EventController::class, 'cancelRsvp'])->name('events.rsvp.cancel');
 
@@ -86,24 +89,24 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     });
 
     Route::get('/jobs', [JobPostingController::class, 'index'])->name('jobs.index');
-    Route::get('/jobs/{job}', [JobPostingController::class, 'show'])->name('jobs.show');
-    Route::post('/jobs/{job}/apply', [JobPostingController::class, 'apply'])->name('jobs.apply');
+
+    // my-postings MUST come before /jobs/{job}
     Route::get('/jobs/my-postings', [JobPostingController::class, 'myPostings'])
         ->middleware('role:alumni')
         ->name('jobs.my-postings');
+
+    Route::get('/jobs/{job}', [JobPostingController::class, 'show'])->name('jobs.show');
+    Route::post('/jobs/{job}/apply', [JobPostingController::class, 'apply'])->name('jobs.apply');
     Route::get('/jobs/{job}/applications', [JobPostingController::class, 'applications'])
         ->middleware('role:admin|alumni')
         ->name('jobs.applications');
-    Route::put('/applications/{application}', [JobPostingController::class, 'updateApplicationStatus'])
-        ->middleware('role:admin|alumni')
-        ->name('applications.update');
-    Route::get('/applications/{application}', [JobPostingController::class, 'showApplication'])
-        ->name('applications.show');
-    Route::get('/applications/{application}/resume', [JobPostingController::class, 'downloadResume'])
-        ->middleware(['auth'])
-        ->name('applications.resume.download');
-    Route::get('/resume/{filename}', [JobPostingController::class, 'downloadResume'])->name('resume.download');
-    Route::get('/jobs/{application}/download-resume', [JobPostingController::class, 'downloadResume'])->name('jobs.downloadResume')->middleware(['web', 'auth', 'verified', 'approved']);
+
+    // Application viewing + resume download (policy-authorized in the controller)
+    Route::get('/applications/{application}', [JobPostingController::class, 'showApplication'])->name('applications.show');
+    Route::get('/applications/{application}/resume', [JobPostingController::class, 'downloadResume'])->name('applications.resume.download');
+    Route::get('/jobs/{application}/download-resume', [JobPostingController::class, 'downloadResume'])->name('jobs.downloadResume');
+
+    // Single, correct status-update route (controller signature matches)
     Route::put('/jobs/{job}/applications/{application}', [JobPostingController::class, 'updateApplicationStatus'])->name('jobs.applications.update');
 
     /*
@@ -144,7 +147,7 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     |-----------------------------
     | Mentorship – Mentor Signup
     | (restricted to alumni with
-    |  "mentor students" permission)
+    |  "create-mentorship" permission)
     |-----------------------------
     */
     Route::middleware(['auth', 'role:alumni', 'can:create-mentorship'])->group(function () {
@@ -184,8 +187,11 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::middleware(['role:admin'])->prefix('admin')->name('admin.')->group(function () {
         Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
         Route::get('/pending-approvals', [AdminController::class, 'pendingApprovals'])->name('pending-approvals');
+
+        // Single approve/reject pair (POST) — the pending-approvals
+        // view posts to both of these route names.
         Route::post('/approve-user/{user}', [AdminController::class, 'approveUser'])->name('approve-user');
-        Route::delete('/reject-user/{user}', [AdminController::class, 'rejectUser'])->name('reject-user');
+        Route::post('/reject-user/{user}', [AdminController::class, 'rejectUser'])->name('reject-user');
 
         // Permissions
         Route::get('/permissions', [AdminController::class, 'permissions'])->name('permissions');
@@ -196,8 +202,6 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         Route::get('/user-management', [AdminController::class, 'userManagement'])->name('user-management');
         Route::get('/user/create', [AdminController::class, 'createUser'])->name('user.create');
         Route::post('/user/store', [AdminController::class, 'storeUser'])->name('user.store');
-        Route::post('/approve-user/{user}', [AdminController::class, 'approveUser'])->name('approve-user');
-        Route::post('/reject-user/{user}', [AdminController::class, 'rejectUser'])->name('reject-user');
         Route::post('/bulk-approval', [AdminController::class, 'bulkApproval'])->name('users.bulk-approval');
         Route::post('/users/bulk-action', [AdminController::class, 'bulkAction'])->name('users.bulk-action');
         Route::post('/user/{id}/restore', [AdminController::class, 'restoreUser'])->name('user.restore');
@@ -234,38 +238,9 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
         Route::get('/profile', [StudentController::class, 'editProfile'])->name('profile');
         Route::post('/profile/update', [StudentController::class, 'updateProfile'])->name('profile.update');
     });
-
-    // Email Verification Routes
-    Route::get('/email/verify', function () {
-        return view('auth.verify-email');
-    })->middleware('auth')->name('verification.notice');
-    Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
-        $request->fulfill();
-        return redirect('/dashboard');
-    })->middleware('signed')->name('verification.verify');
-    // Password Confirmation Routes
-    Route::get('/confirm-password', [ConfirmablePasswordController::class, 'show'])->name('password.confirm');
-    Route::post('/confirm-password', [ConfirmablePasswordController::class, 'store']);
-
-    // Forgot Password Routes
-    Route::get('/forgot-password', [PasswordResetLinkController::class, 'create'])
-        ->middleware('guest')
-        ->name('password.request');
-
-    Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])
-        ->middleware('guest')
-        ->name('password.email');
-
-    // Reset Password Routes
-    Route::get('/reset-password/{token}', [NewPasswordController::class, 'create'])
-        ->middleware('guest')
-        ->name('password.reset');
-
-    Route::post('/reset-password', [NewPasswordController::class, 'store'])
-        ->middleware('guest')
-        ->name('password.store');
-
 });
 
-// Breeze auth routes
+// Breeze auth routes (login, register, logout, password reset,
+// email verification, password confirmation — all of these live
+// in auth.php and MUST NOT be duplicated inside the approved group)
 require __DIR__.'/auth.php';
