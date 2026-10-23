@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Models\Profile;
 use App\Models\ActivityLog;
 use App\Notifications\UserRegisteredNotification;
 use Illuminate\Auth\Events\Registered;
@@ -49,9 +48,9 @@ class RegisteredUserController extends Controller
         $isFirstUser = User::count() === 0;
 
         // Generate Student ID
-        $studentId = $isFirstUser
-            ? 'ADMIN001'
-            : 'STU' . date('Y') . mt_rand(1000, 9999);
+        do {
+            $studentId = 'STU' . date('Y') . mt_rand(1000, 9999);
+        } while (User::where('student_id', $studentId)->exists());
 
         // SECURITY: is_approved is NOT fillable on the User model.
         // Every user starts unapproved. The bootstrap admin is approved

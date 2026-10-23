@@ -20,16 +20,6 @@ class ForumThread extends Model
         'is_locked'
     ];
 
-    public function create(User $user): bool
-    {
-        return $user->is_approved;
-    }
-
-    public function view(User $user, ForumThread $thread): bool
-    {
-        return true; // anyone can view
-    }
-
     public function category()
     {
         return $this->belongsTo(ForumCategory::class, 'forum_category_id');
@@ -42,7 +32,7 @@ class ForumThread extends Model
 
     public function posts()
     {
-        return $this->hasMany(ForumPost::class)->latest();
+        return $this->hasMany(ForumPost::class);
     }
 
     public function latestPost()
@@ -88,5 +78,4 @@ class ForumThread extends Model
             ->where('user_id', $userId ?: auth()->id())
             ->exists();
     }
-
 }

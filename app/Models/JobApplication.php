@@ -11,7 +11,6 @@ class JobApplication extends Model
 {
     use HasFactory;
 
-
     protected $fillable = [
         'job_posting_id',
         'user_id',
@@ -26,6 +25,18 @@ class JobApplication extends Model
         'updated_at' => 'datetime',
     ];
 
+    /**
+     * Canonical relation name — used by the controller and policies.
+     */
+    public function jobPosting()
+    {
+        return $this->belongsTo(JobPosting::class);
+    }
+
+    /**
+     * Legacy alias — kept for compatibility with code that uses job().
+     * Prefer jobPosting() in new code.
+     */
     public function job()
     {
         return $this->belongsTo(JobPosting::class, 'job_posting_id');
@@ -50,27 +61,42 @@ class JobApplication extends Model
         return $labels[$this->status] ?? $this->status;
     }
 
-    public function jobPosting()
-    {
-        return $this->belongsTo(JobPosting::class);
-    }
-
+    /**
+     * Status-change notifications live HERE — the controller's
+     * updateApplicationStatus() deliberately sends nothing, so every
+     * recipient gets exactly one notification per status change.
+     */
     protected static function booted()
     {
         static::updated(function ($application) {
-            if ($application->isDirty('status')) {
-                $oldStatus = $application->getOriginal('status');
-                $newStatus = $application->status;
-                if ($oldStatus !== $newStatus) {
-                    $applicant = $application->applicant;
-                    $jobPoster = $application->job->poster;
-                    $admins = User::role('admin')->get();
-                    $applicant->notify(new ApplicationStatusChangedNotification($application, $oldStatus));
-                    Notification::send($jobPoster, new ApplicationStatusChangedNotification($application, $oldStatus));
-                    Notification::send($admins, new ApplicationStatusChangedNotification($application, $oldStatus));
-                }
+            if (!$application->isDirty('status')) {
+                return;
             }
+
+            $oldStatus = $application->getOriginal('status');
+            $newStatus = $application->status;
+
+            if ($oldStatus === $newStatus) {
+                return;
+            }
+
+            $recipients = User::role('admin')->get();
+
+            if ($application->applicant) {
+                $recipients = $recipients->merge([$application->applicant]);
+            }
+
+            // Null-safe: a soft-deleted posting makes the job relation null.
+            $job = $application->job;
+
+            if ($job && $job->poster) {
+                $recipients = $recipients->merge([$job->poster]);
+            }
+
+            Notification::send(
+                $recipients->unique('id')->values(),
+                new ApplicationStatusChangedNotification($application, $oldStatus)
+            );
         });
     }
-
 }

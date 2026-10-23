@@ -67,11 +67,22 @@
                     @if($event->is_online)
                         <p>
                             <span class="badge bg-info text-dark">Online Event</span><br>
-                            <a href="{{ $event->meeting_url }}"
-                               target="_blank"
-                               class="link-primary fw-semibold">
-                                Join Meeting
-                            </a>
+                            {{-- Meeting link: organizer or attendees (going/interested) only --}}
+                            @php
+                                $canSeeMeetingUrl = auth()->check() && (
+                                    auth()->id() === $event->user_id
+                                    || ($userRsvp && in_array($userRsvp->status, ['going', 'interested']))
+                                );
+                            @endphp
+                            @if($canSeeMeetingUrl)
+                                <a href="{{ $event->meeting_url }}" target="_blank" rel="noopener"
+                                   class="link-primary fw-semibold">Join Meeting</a>
+                            @else
+                                <span class="text-muted small">
+                                    <i class="bi bi-lock"></i>
+                                    The meeting link becomes available once you RSVP as going or interested.
+                                </span>
+                            @endif
                         </p>
                     @elseif($event->location)
                         <p class="text-muted">{{ $event->location }}</p>
@@ -95,6 +106,12 @@
                                 <i class="bi bi-exclamation-circle-fill me-2"></i>
                                 This event is at capacity.
                             </div>
+                        @elseif(!auth()->check())
+                            {{-- Guests get a login prompt instead of a broken RSVP form --}}
+                            <p class="text-muted small mb-0">
+                                <i class="bi bi-box-arrow-in-right me-1"></i>
+                                <a href="{{ route('login') }}">Log in</a> to RSVP for this event.
+                            </p>
                         @elseif($userRsvp)
                             <div class="alert alert-success">
                                 <i class="bi bi-check-circle-fill me-2"></i>

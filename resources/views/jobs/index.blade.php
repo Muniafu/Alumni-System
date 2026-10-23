@@ -3,7 +3,7 @@
 @section('header')
 <div class="d-flex justify-content-between align-items-center">
     <h2 class="fw-semibold text-primary mb-0">{{ $title }}</h2>
-    @can('create jobs')
+    @can('create-jobs')
     <a href="{{ route('jobs.create') }}" class="btn btn-primary">
         <i class="fa-solid fa-plus me-1"></i> Post New Opportunity
     </a>
@@ -102,7 +102,7 @@
             <p class="text-muted">
                 There are currently no {{ request()->query('type') ?? 'job' }} postings available.
             </p>
-            @can('create jobs')
+            @can('create-jobs')
             <a href="{{ route('jobs.create') }}" class="btn btn-primary mt-3">
                 Post New Opportunity
             </a>

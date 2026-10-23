@@ -9,7 +9,7 @@ use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Notification;
 use App\Models\JobPosting;
 
-class NewJobPostedNotification extends Notification
+class NewJobPostedNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
@@ -30,7 +30,7 @@ class NewJobPostedNotification extends Notification
      */
     public function via(object $notifiable): array
     {
-        return ['database', 'broadcast']; // only add 'mail' if your mailer works
+        return ['database', 'broadcast']; // add 'mail' once the mailer is configured
     }
 
     /**
@@ -47,7 +47,8 @@ class NewJobPostedNotification extends Notification
     }
 
     /**
-     * Get the array representation of the notification (shared by DB + Broadcast).
+     * Get the array representation of the notification
+     * (used by both the database and broadcast channels).
      */
     public function toArray(object $notifiable): array
     {
@@ -55,20 +56,6 @@ class NewJobPostedNotification extends Notification
             'job_id'  => $this->job->id,
             'title'   => $this->job->title,
             'message' => "New job posted: {$this->job->title} by {$this->job->poster->name}",
-            'url'     => route('jobs.show', $this->job->id),
-            'type'    => 'new_job_posted'
-        ];
-    }
-
-    /**
-     * Store in database.
-     */
-    public function toDatabase($notifiable)
-    {
-        return [
-            'job_id'  => $this->job->id,
-            'title'   => $this->job->title,
-            'message' => "New job posted: {$this->job->title}",
             'url'     => route('jobs.show', $this->job->id),
             'type'    => 'new_job_posted'
         ];

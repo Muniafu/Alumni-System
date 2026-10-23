@@ -54,7 +54,7 @@ class EventCreatedNotification extends Notification implements ShouldQueue
         return [
             'event_id' => $this->event->id,
             'title' => $this->event->title,
-            'date' => $this->event->date,
+            'date' => $this->event->start->format('d M, Y'),
             'location' => $this->event->location,
             'message' => "New event created: {$this->event->title}",
             'url' => route('events.show', $this->event->id),

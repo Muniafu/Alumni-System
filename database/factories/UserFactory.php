@@ -41,4 +41,14 @@ class UserFactory extends Factory
             'email_verified_at' => null,
         ]);
     }
+
+    /**
+     * Approved user - is_approved is not fillable, so force-fill after creation.
+     */
+    public function approved(): static
+    {
+        return $this->afterCreating(function (User $user) {
+            $user->forceFill(['is_approved' => true])->save();
+        });
+    }
 }

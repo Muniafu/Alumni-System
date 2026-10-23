@@ -9,6 +9,8 @@ use App\Models\EventRsvp;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
+use Illuminate\Database\QueryException;
 use App\Notifications\EventCreatedNotification;
 use App\Notifications\EventRsvpNotification;
 
@@ -33,20 +35,30 @@ class EventController extends Controller
 
     public function getCalendarEvents(Request $request)
     {
-        $start = $request->start;
-        $end = $request->end;
+        $validated = $request->validate([
+            'start' => 'required|date',
+            'end'   => 'required|date|after_or_equal:start',
+        ]);
 
-        $events = Event::whereBetween('start', [$start, $end])
-            ->orWhereBetween('end', [$start, $end])
+        [$start, $end] = [$validated['start'], $validated['end']];
+
+        // Include events that start or end inside the window, AND events
+        // that span the entire window (start before it, end after it).
+        $events = Event::where(function ($q) use ($start, $end) {
+                $q->whereBetween('start', [$start, $end])
+                  ->orWhereBetween('end', [$start, $end])
+                  ->orWhere(fn($q2) => $q2->where('start', '<', $start)
+                                           ->where('end', '>', $end));
+            })
             ->get()
             ->map(fn($event) => [
-                'id' => $event->id,
-                'title' => $event->title,
-                'start' => $event->start->toIso8601String(),
-                'end' => $event->end->toIso8601String(),
+                'id'       => $event->id,
+                'title'    => $event->title,
+                'start'    => $event->start->toIso8601String(),
+                'end'      => $event->end->toIso8601String(),
                 'location' => $event->location,
-                'url' => route('events.show', $event->id),
-                'color' => $event->is_online ? '#3b82f6' : '#10b981',
+                'url'      => route('events.show', $event->id),
+                'color'    => $event->is_online ? '#3b82f6' : '#10b981',
             ]);
 
         return response()->json($events);
@@ -63,16 +75,22 @@ class EventController extends Controller
         Gate::authorize('create', Event::class);
 
         $validated = $request->validate([
-            'title' => 'required|string|max:255',
+            'title'       => 'required|string|max:255',
             'description' => 'nullable|string',
-            'start' => 'required|date',
-            'end' => 'required|date|after:start',
-            'location' => 'nullable|string|max:255',
-            'image' => 'nullable|image|max:2048',
-            'capacity' => 'nullable|integer|min:1',
-            'is_online' => 'boolean',
-            'meeting_url' => 'nullable|url|required_if:is_online,true',
+            'start'       => 'required|date',
+            'end'         => 'required|date|after:start',
+            'location'    => 'nullable|string|max:255',
+            'image'       => 'nullable|image|max:2048',
+            'capacity'    => 'nullable|integer|min:1',
+            'is_online'   => 'boolean',
+            // A checked checkbox posts "1" (not "true"), so required_if
+            // previously never fired. Use Rule::requiredIf with a boolean.
+            'meeting_url' => ['nullable', 'url', Rule::requiredIf($request->boolean('is_online'))],
         ]);
+
+        // Normalize checkbox state so an unchecked box actually clears the flag.
+        $validated['is_online']   = $request->boolean('is_online');
+        $validated['meeting_url'] = $validated['is_online'] ? ($validated['meeting_url'] ?? null) : null;
 
         if ($request->hasFile('image')) {
             $validated['image'] = $request->file('image')->store('events', 'public');
@@ -81,11 +99,11 @@ class EventController extends Controller
         $validated['user_id'] = auth()->id();
         $event = Event::create($validated);
 
-        // Notify approved students/alumni
+        // Notify approved students/alumni (queued notification)
         $recipients = User::query()
             ->where('id', '!=', auth()->id())
             ->where('is_approved', true)
-            ->whereHas('roles', fn($q) => $q->whereIn('name', ['student','alumni']))
+            ->whereHas('roles', fn($q) => $q->whereIn('name', ['student', 'alumni']))
             ->get();
 
         Notification::send($recipients, new EventCreatedNotification($event));
@@ -96,7 +114,7 @@ class EventController extends Controller
 
     public function show(Event $event)
     {
-        $userRsvp = $event->rsvps()->where('user_id', auth()->id())->first();
+        $userRsvp  = $event->rsvps()->where('user_id', auth()->id())->first();
         $attendees = $event->rsvps()->with('user')->where('status', 'going')->get();
 
         return view('events.show', compact('event', 'userRsvp', 'attendees'));
@@ -113,16 +131,20 @@ class EventController extends Controller
         Gate::authorize('update', $event);
 
         $validated = $request->validate([
-            'title' => 'required|string|max:255',
+            'title'       => 'required|string|max:255',
             'description' => 'nullable|string',
-            'start' => 'required|date',
-            'end' => 'required|date|after:start',
-            'location' => 'nullable|string|max:255',
-            'image' => 'nullable|image|max:2048',
-            'capacity' => 'nullable|integer|min:1',
-            'is_online' => 'boolean',
-            'meeting_url' => 'nullable|url|required_if:is_online,true',
+            'start'       => 'required|date',
+            'end'         => 'required|date|after:start',
+            'location'    => 'nullable|string|max:255',
+            'image'       => 'nullable|image|max:2048',
+            'capacity'    => 'nullable|integer|min:1',
+            'is_online'   => 'boolean',
+            'meeting_url' => ['nullable', 'url', Rule::requiredIf($request->boolean('is_online'))],
         ]);
+
+        // Without this, an unchecked is_online never reverted the flag on edit.
+        $validated['is_online']   = $request->boolean('is_online');
+        $validated['meeting_url'] = $validated['is_online'] ? ($validated['meeting_url'] ?? null) : null;
 
         if ($request->hasFile('image')) {
             if ($event->image) Storage::disk('public')->delete($event->image);
@@ -138,7 +160,8 @@ class EventController extends Controller
     public function destroy(Event $event)
     {
         Gate::authorize('delete', $event);
-        if ($event->image) Storage::disk('public')->delete($event->image);
+
+        // Soft delete — keep the stored image so a restored event stays intact.
         $event->delete();
 
         return redirect()->route('events.index')
@@ -148,23 +171,37 @@ class EventController extends Controller
     /** RSVP Handling **/
     public function rsvp(Request $request, Event $event)
     {
-        $this->authorize('rsvp', Event::class);
+        $this->authorize('rsvp', $event);
 
         $validated = $request->validate([
             'status' => 'required|in:going,interested,not_going',
             'guests' => 'nullable|integer|min:0',
-            'notes' => 'nullable|string|max:500',
+            'notes'  => 'nullable|string|max:500',
         ]);
 
-        // Enforce capacity
-        if ($validated['status'] === 'going' && $event->isFull()) {
+        // Users already marked "going" may still update their RSVP
+        // (guests/notes) even if the event has filled up since.
+        $alreadyGoing = $event->rsvps()
+            ->where('user_id', auth()->id())
+            ->where('status', 'going')
+            ->exists();
+
+        if ($validated['status'] === 'going' && !$alreadyGoing && $event->isFull()) {
             return back()->withErrors(['status' => 'This event is full. You cannot RSVP as "Going".']);
         }
 
-        $rsvp = $event->rsvps()->updateOrCreate(
-            ['user_id' => auth()->id()],
-            $validated
-        );
+        try {
+            $rsvp = $event->rsvps()->updateOrCreate(
+                ['user_id' => auth()->id()],
+                $validated
+            );
+        } catch (QueryException $e) {
+            // Double-submit race caught by the unique(event_id, user_id) index.
+            if (($e->errorInfo[1] ?? null) !== 1062) {
+                throw $e;
+            }
+            return back()->withErrors(['status' => 'You have already RSVPed to this event.']);
+        }
 
         // Notify organizer if not self
         if ($event->organizer && $event->organizer->id != auth()->id()) {

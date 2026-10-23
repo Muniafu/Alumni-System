@@ -106,8 +106,12 @@ class ProfileController extends Controller
         ]);
 
         $user = $request->user();
-        Auth::logout();
+
+        // Delete BEFORE logging out — UserObserver logs the deletion with
+        // auth()->id(), which is null after logout (NOT NULL violation = the 500).
         $user->delete();
+
+        Auth::logout();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();

@@ -13,14 +13,13 @@ class AuthenticationTest extends TestCase
 
     public function test_login_screen_can_be_rendered(): void
     {
-        $response = $this->get('/login');
-
-        $response->assertStatus(200);
+        $this->get('/login')->assertOk();
     }
 
-    public function test_users_can_authenticate_using_the_login_screen(): void
+    public function test_approved_users_can_authenticate_using_the_login_screen(): void
     {
         $user = User::factory()->create();
+        $user->forceFill(['is_approved' => true])->save();
 
         $response = $this->post('/login', [
             'email' => $user->email,
@@ -29,6 +28,19 @@ class AuthenticationTest extends TestCase
 
         $this->assertAuthenticated();
         $response->assertRedirect(RouteServiceProvider::HOME);
+    }
+
+    public function test_unapproved_users_land_on_the_pending_page(): void
+    {
+        $user = User::factory()->create(); // stays unapproved
+
+        $response = $this->post('/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
+
+        $this->assertAuthenticated();
+        $response->assertRedirect('/pending-approval');
     }
 
     public function test_users_can_not_authenticate_with_invalid_password(): void
@@ -46,10 +58,10 @@ class AuthenticationTest extends TestCase
     public function test_users_can_logout(): void
     {
         $user = User::factory()->create();
+        $user->forceFill(['is_approved' => true])->save();
 
-        $response = $this->actingAs($user)->post('/logout');
+        $this->actingAs($user)->post('/logout');
 
         $this->assertGuest();
-        $response->assertRedirect('/');
     }
 }

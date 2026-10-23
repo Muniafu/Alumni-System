@@ -19,11 +19,12 @@ class ForumThreadPolicy
     }
 
     /**
-     * Only approved users can create threads.
+     * Approved users (students and alumni) can create threads.
+     * Once Phase 2 permissions are seeded, use: $user->can('create-forums')
      */
     public function create(User $user): bool
     {
-        return $user->is_approved&& $user->hasRole('alumni');
+        return $user->is_approved;
     }
 
     /**

@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
+use App\Notifications\ProfileCompletedNotification;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Notifications\ProfileCompletedNotification;
 
 class Profile extends Model
 {
@@ -26,13 +26,20 @@ class Profile extends Model
         'certifications',
     ];
 
+    /**
+     * social_links: JSON object, e.g. {"linkedin":"https://...","twitter":"https://..."}
+     * profile_completion: MySQL returns strings; cast keeps === comparisons sane.
+     */
+    protected $casts = [
+        'social_links' => 'array',
+        'profile_completion' => 'integer',
+    ];
+
     protected $attributes = [
-        'social_links' => '',
         'skills' => '',
         'interests' => '',
-        'profile_completion' => 0,
-        'education' => null,
         'certifications' => '',
+        'profile_completion' => 0,
     ];
 
     /**
@@ -43,133 +50,128 @@ class Profile extends Model
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * Accessors for array-like fields
-     */
+    /*
+    |--------------------------------------------------------------------------
+    | Skills / interests / certifications (plain comma-separated strings)
+    |--------------------------------------------------------------------------
+    */
+
     public function getSkillsArrayAttribute(): array
     {
-        return $this->skills ? explode(',', $this->skills) : [];
+        return $this->skills ? array_values(array_filter(array_map('trim', explode(',', $this->skills)))) : [];
     }
 
     public function getInterestsArrayAttribute(): array
     {
-        return $this->interests ? explode(',', $this->interests) : [];
+        return $this->interests ? array_values(array_filter(array_map('trim', explode(',', $this->interests)))) : [];
     }
 
-    public function getSocialLinksArrayAttribute(): array
+    public function getCertificationsArrayAttribute(): array
     {
-        return $this->social_links ? explode(',', $this->social_links) : [];
+        return $this->certifications ? array_values(array_filter(array_map('trim', explode(',', $this->certifications)))) : [];
     }
 
-    /**
-     * Mutators to save array as comma-separated string
-     */
     public function setSkillsAttribute($value)
     {
-        $this->attributes['skills'] = is_array($value) ? implode(',', $value) : $value;
+        $this->attributes['skills'] = is_array($value) ? implode(',', $value) : (string) $value;
     }
 
     public function setInterestsAttribute($value)
     {
-        $this->attributes['interests'] = is_array($value) ? implode(',', $value) : $value;
+        $this->attributes['interests'] = is_array($value) ? implode(',', $value) : (string) $value;
     }
 
+    public function setCertificationsAttribute($value)
+    {
+        $this->attributes['certifications'] = is_array($value) ? implode(',', $value) : (string) $value;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Social links (JSON object via cast)
+    |--------------------------------------------------------------------------
+    */
+
     /**
-     * Get a single social link by key
+     * Get a single social link by key, e.g. $profile->getSocialLink('linkedin')
      */
     public function getSocialLink(string $key): ?string
     {
-        $links = $this->social_links ? explode(',', $this->social_links) : [];
+        return $this->social_links[$key] ?? null;
+    }
 
-        // Assuming links are stored as key=value pairs like "linkedin=https://...,twitter=..."
-        foreach ($links as $link) {
-            [$k, $v] = array_pad(explode('=', $link, 2), 2, null);
-            if ($k === $key) return $v;
+    /**
+     * Set a single social link by key. Passing null or '' removes it.
+     * Does NOT save — persist with $profile->save() from the caller.
+     */
+    public function setSocialLink(string $key, ?string $value): void
+    {
+        $links = $this->social_links ?? [];
+
+        if ($value === null || $value === '') {
+            unset($links[$key]);
+        } else {
+            $links[$key] = $value;
         }
 
-        return null;
+        $this->social_links = $links;
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Completion
+    |--------------------------------------------------------------------------
+    */
 
     /**
-     * Set a single social link by key
+     * Calculate profile completion percentage (0–100).
+     *
+     * Pass $save = false if the caller saves the model itself
+     * (recommended: one save per request).
      */
-    public function setSocialLink(string $key, string $value): void
-    {
-        $links = $this->social_links ? explode(',', $this->social_links) : [];
-        $updated = false;
-
-        foreach ($links as &$link) {
-            [$k, $v] = array_pad(explode('=', $link, 2), 2, null);
-            if ($k === $key) {
-                $link = "$key=$value";
-                $updated = true;
-                break;
-            }
-        }
-
-        if (!$updated) {
-            $links[] = "$key=$value";
-        }
-
-        $this->social_links = implode(',', $links);
-        $this->save();
-    }
-
-    public function setSocialLinksAttribute($value)
-    {
-        $this->attributes['social_links'] = is_array($value) ? implode(',', $value) : $value;
-    }
-
-    /**
-     * Accessor for certifications array
-     */
-    public function getCertificationsArrayAttribute(): array
-    {
-        return $this->certifications ? explode(',', $this->certifications) : [];
-    }
-
-    /**
-     * Mutator for certifications
-     */
-    public function setCertificationsAttribute($value)
-    {
-        $this->attributes['certifications'] = is_array($value) ? implode(',', $value) : $value;
-    }
-
-    /**
-     * Calculate profile completion percentage
-     */
-    public function calculateCompletion(): int
+    public function calculateCompletion(bool $save = true): int
     {
         $completedFields = 0;
 
-        $userFields = ['name', 'email'];
+        $userFields    = ['name', 'email'];
         $profileFields = ['phone', 'address', 'current_job', 'company', 'bio', 'education'];
-        $arrayFields = ['skills', 'interests', 'social_links', 'certifications'];
+        $arrayFields   = ['skills', 'interests', 'social_links', 'certifications'];
 
         foreach ($userFields as $field) {
-            if (!empty($this->user->$field)) $completedFields++;
+            if (!empty($this->user->{$field})) {
+                $completedFields++;
+            }
         }
 
         foreach ($profileFields as $field) {
-            if (!empty($this->$field)) $completedFields++;
+            if (!empty($this->{$field})) {
+                $completedFields++;
+            }
         }
 
         foreach ($arrayFields as $field) {
-            if (!empty($this->{$field}) && count(explode(',', $this->{$field})) >= 1) {
+            if (!empty($this->{$field})) {
                 $completedFields++;
             }
         }
 
         $totalFields = count($userFields) + count($profileFields) + count($arrayFields);
-        $completionPercentage = min(100, round(($completedFields / $totalFields) * 100));
-        $this->profile_completion = $completionPercentage;
-        $this->save();
+        $completionPercentage = min(100, (int) round(($completedFields / $totalFields) * 100));
 
-        if ($completionPercentage === 100 && !$this->user->notifications()
-            ->where('type', ProfileCompletedNotification::class)
-            ->exists()) {
+        $this->profile_completion = $completionPercentage;
+
+        // One-time notification at 100% (never duplicates).
+        if (
+            $completionPercentage === 100
+            && !$this->user->notifications()
+                ->where('type', ProfileCompletedNotification::class)
+                ->exists()
+        ) {
             $this->user->notify(new ProfileCompletedNotification());
+        }
+
+        if ($save) {
+            $this->save();
         }
 
         return $completionPercentage;

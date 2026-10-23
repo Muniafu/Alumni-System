@@ -4,29 +4,47 @@ namespace App\Http\Controllers;
 
 use App\Models\Event;
 use App\Models\JobPosting;
-use Illuminate\Http\Request;
 use App\Models\User;
-use App\Models\Profile;
-use Illuminate\Support\Facades\Gate;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Notifications\EventRsvpNotification;
-use App\Notifications\JobApplicationNotification;
+use Illuminate\Support\Facades\Gate;
 
 class StudentController extends Controller
 {
+    /*
+    |----------------------------------------------------------------------
+    | NOTE ON REMOVED METHODS
+    |----------------------------------------------------------------------
+    | rsvpEvent() and applyJob() were removed. They duplicated
+    | EventController::rsvp() and JobPostingController::apply() with
+    | bugs the canonical versions don't have:
+    |
+    | - rsvpEvent() used rsvps()->create(), which crashes with a SQL
+    |   error when a user RSVPs twice (unique event_id+user_id index).
+    |   EventController::rsvp() correctly uses updateOrCreate().
+    | - applyJob() wrote a non-existent `resume` column (the table has
+    |   `resume_path`), stored no uploaded file, had no validation and
+    |   used an invalid `status => 'pending'` value ('submitted' is the
+    |   first valid status).
+    |
+    | After pasting this file, run:
+    |     grep -rn "rsvpEvent\|applyJob" routes/
+    | If anything points at StudentController, repoint those routes to
+    | EventController::rsvp and JobPostingController::apply.
+    */
+
     public function dashboard()
     {
         Gate::authorize('access-student-dashboard');
-        $user = Auth::user();
 
+        $user = Auth::user();
         $user->load('profile');
 
-        $canViewEvents = $user->can('view events');
-        $canRSVPEvents = $user->can('rsvp events');
+        $canViewEvents = $user->can('view-events');
+        $canRSVPEvents = $user->can('rsvp-events');
         $upcomingEvents = [];
-        $recentJobs = [];
 
-        if ($user->can('view events')) {
+        if ($canViewEvents) {
             $upcomingEvents = Event::upcoming()
                 ->orderBy('start')
                 ->limit(5)
@@ -34,7 +52,7 @@ class StudentController extends Controller
         }
 
         $recentJobs = JobPosting::active()
-            ->orderBy('created_at', 'desc')
+            ->latest()
             ->limit(5)
             ->get();
 
@@ -44,26 +62,32 @@ class StudentController extends Controller
             'canViewEvents' => $canViewEvents,
             'canRSVPEvents' => $canRSVPEvents,
             'upcomingEvents' => $upcomingEvents,
-            'recentJobs' => $recentJobs
+            'recentJobs' => $recentJobs,
         ]);
     }
 
+    /**
+     * Show the student profile edit page.
+     */
     public function editProfile()
     {
-        Gate::authorize('edit-profile', Auth::user());
         $user = Auth::user();
+        Gate::authorize('edit-profile', $user);
         $this->ensureProfileExists($user);
 
         return view('student.profile', [
             'user' => $user,
-            'profile' => $user->profile
+            'profile' => $user->profile,
         ]);
     }
 
+    /**
+     * Update the student profile.
+     */
     public function updateProfile(Request $request)
     {
-        Gate::authorize('edit-profile', Auth::user());
         $user = Auth::user();
+        Gate::authorize('edit-profile', $user);
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -76,13 +100,18 @@ class StudentController extends Controller
 
         $user->update(['name' => $validated['name']]);
 
-        $profileData = $this->prepareProfileData($validated);
-        $user->profile()->updateOrCreate([], $profileData);
+        $user->profile()->updateOrCreate([], $this->prepareProfileData($validated));
         $user->profile->calculateCompletion();
 
         return redirect()->route('student.dashboard')
             ->with('success', 'Profile updated successfully');
     }
+
+    /*
+    |----------------------------------------------------------------------
+    | Helpers
+    |----------------------------------------------------------------------
+    */
 
     protected function ensureProfileExists(User $user): void
     {
@@ -100,63 +129,13 @@ class StudentController extends Controller
     protected function prepareProfileData(array $data): array
     {
         return [
-            'phone' => $data['phone'],
-            'address' => $data['address'],
-            'bio' => $data['bio'],
+            'phone' => $data['phone'] ?? null,
+            'address' => $data['address'] ?? null,
+            'bio' => $data['bio'] ?? null,
             'social_links' => [
-                'linkedin' => $data['linkedin'],
-                'twitter' => $data['twitter'],
+                'linkedin' => $data['linkedin'] ?? null,
+                'twitter' => $data['twitter'] ?? null,
             ],
         ];
     }
-
-    // RSVP to event
-    public function rsvpEvent(Request $request, Event $event)
-    {
-        Gate::authorize('rsvp events');
-
-        $user = Auth::user();
-
-        if ($event->isFull() && $request->status === 'going') {
-            return back()->with('error', 'This event is already full.');
-        }
-
-        $rsvp = $event->rsvps()->create([
-            'user_id' => $user->id,
-            'status' => $request->input('status', 'going'), // going | interested
-            'guests' => $request->input('guests', 0),
-            'notes' => $request->input('notes'),
-        ]);
-
-        // 🔔 Notify event organizer
-        $event->organizer->notify(new EventRsvpNotification($rsvp));
-
-        return back()->with('success', 'RSVP submitted successfully!');
-    }
-
-
-    // Apply to job posting
-    public function applyJob(Request $request, JobPosting $job)
-    {
-        Gate::authorize('apply-job');
-
-        $user = Auth::user();
-
-        if (!$job->canApply($user)) {
-            return back()->with('error', 'You cannot apply for this job.');
-        }
-
-        $application = $job->applications()->create([
-            'user_id' => $user->id,
-            'cover_letter' => $request->input('cover_letter'),
-            'resume' => $request->input('resume'),
-            'status' => 'pending',
-        ]);
-
-        // 🔔 Notify job poster
-        $job->poster->notify(new JobApplicationNotification($application));
-
-        return back()->with('success', 'Application submitted successfully!');
-    }
-
 }

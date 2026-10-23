@@ -84,10 +84,11 @@
                                     Organized by {{ $event->organizer->name }}
                                 </span>
                                 <span>
+                                    {{-- Uses the withCount value from the controller (no N+1 count queries) --}}
                                     <i class="fa-solid fa-users me-1"></i>
-                                    {{ $event->attendees_going }} going
+                                    {{ $event->attendees_going_count }} going
                                     @if($event->capacity)
-                                        ({{ $event->available_spots }} spots left)
+                                        ({{ max(0, $event->capacity - $event->attendees_going_count) }} spots left)
                                     @endif
                                 </span>
                             </div>

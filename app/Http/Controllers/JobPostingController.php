@@ -9,10 +9,9 @@ use App\Models\JobApplication;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
-use App\Notifications\NewJobPostedNotification;
 use App\Notifications\JobApplicationNotification;
-use App\Notifications\ApplicationStatusChangedNotification;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Database\UniqueConstraintViolationException;
 
 class JobPostingController extends Controller
 {
@@ -72,6 +71,9 @@ class JobPostingController extends Controller
 
     /**
      * Store a newly created resource in storage.
+     *
+     * The NewJobPostedNotification is sent by JobPosting::booted()
+     * (created event) — nothing is sent here on purpose.
      */
     public function store(Request $request)
     {
@@ -103,25 +105,15 @@ class JobPostingController extends Controller
             ? array_map('trim', explode(',', $request->skills_preferred))
             : null;
 
+        // An unchecked checkbox is simply absent from the request,
+        // so normalise it explicitly instead of relying on the key being there.
+        $validated['is_remote'] = $request->boolean('is_remote');
+
         $validated['user_id'] = auth()->id();
         $validated['is_active'] = true;
 
         try {
             $job = JobPosting::create($validated);
-
-            if (!$job->exists) {
-                throw new \Exception('Failed to save job posting');
-            }
-
-            // ✅ Send notifications here (queued — see NewJobPostedNotification implements ShouldQueue)
-            $recipients = User::query()
-                ->where('is_approved', true)
-                ->whereHas('roles', function ($q) {
-                    $q->whereIn('name', ['alumni', 'student', 'admin']);
-                })
-                ->get();
-
-            Notification::send($recipients, new NewJobPostedNotification($job));
 
             return redirect()->route('jobs.show', $job)
                 ->with('success', 'Job posting created successfully');
@@ -145,6 +137,9 @@ class JobPostingController extends Controller
 
     /**
      * Update the specified resource in storage.
+     *
+     * is_active notifications are sent by JobPosting::booted()
+     * (updated event) — nothing is sent here on purpose.
      */
     public function update(Request $request, JobPosting $job)
     {
@@ -176,6 +171,11 @@ class JobPostingController extends Controller
             ? array_map('trim', explode(',', $request->skills_preferred))
             : null;
 
+        // Checkbox fix: an absent key used to leave is_active/is_remote
+        // unchanged, so a posting could never be deactivated from the edit form.
+        $validated['is_remote'] = $request->boolean('is_remote');
+        $validated['is_active'] = $request->boolean('is_active');
+
         $job->update($validated);
 
         return redirect()->route('jobs.show', $job)
@@ -184,6 +184,10 @@ class JobPostingController extends Controller
 
     /**
      * Remove the specified resource from storage.
+     *
+     * The JobDeletedNotification is sent by JobPosting::booted()
+     * (deleted event) — nothing is sent here on purpose. The posting
+     * is soft-deleted (SoftDeletes), so no FK constraint can fire.
      */
     public function destroy(JobPosting $job)
     {
@@ -197,37 +201,56 @@ class JobPostingController extends Controller
 
     /**
      * Apply to the specified job posting.
+     *
+     * Creation notifications stay here deliberately: this is the only
+     * code path that creates applications. Status-change notifications
+     * belong to JobApplication::booted().
      */
     public function apply(Request $request, JobPosting $job)
     {
-        // Check if user can apply
-        if (!$job->canApply()) {
-            return back()->with('error', 'You cannot apply to this job posting.');
+        // The poster cannot apply to their own posting.
+        if ($job->user_id === auth()->id()) {
+            return redirect()->route('jobs.show', $job)
+                ->with('error', 'You cannot apply to your own job posting.');
         }
 
-        // Validate request
+        if (!$job->canApply()) {
+            return redirect()->route('jobs.show', $job)
+                ->with('error', 'This job posting is not accepting applications.');
+        }
+
+        // Friendly duplicate guard (canApply() also checks this, but an
+        // explicit check gives the clearest error message). The real
+        // guarantee is the unique (job_posting_id, user_id) index added
+        // by the migration — it catches double-click/tab races.
+        if ($job->applications()->where('user_id', auth()->id())->exists()) {
+            return redirect()->route('jobs.show', $job)
+                ->with('error', 'You have already applied to this job posting.');
+        }
+
         $validated = $request->validate([
             'cover_letter' => 'required|string|min:100|max:2000',
             'resume' => 'required|file|mimes:pdf,doc,docx|max:2048', // 2MB
         ]);
 
-        // Ensure the private folder exists
-        $resumeFolder = 'resumes';
-        $privateDisk = 'private';
-        if (!Storage::disk($privateDisk)->exists($resumeFolder)) {
-            Storage::disk($privateDisk)->makeDirectory($resumeFolder);
+        // store() creates the directory automatically — resumes stay on the private disk.
+        $resumePath = $request->file('resume')->store('resumes', 'private');
+
+        try {
+            $application = JobApplication::create([
+                'job_posting_id' => $job->id,
+                'user_id' => auth()->id(),
+                'cover_letter' => $validated['cover_letter'],
+                'resume_path' => $resumePath,
+            ]);
+        } catch (UniqueConstraintViolationException $e) {
+            // Two requests raced past the friendly check — the unique index won.
+            // Clean up the orphaned resume file.
+            Storage::disk('private')->delete($resumePath);
+
+            return redirect()->route('jobs.show', $job)
+                ->with('error', 'You have already applied to this job posting.');
         }
-
-        // Store resume in private storage
-        $resumePath = $request->file('resume')->store($resumeFolder, $privateDisk);
-
-        // Create job application
-        $application = JobApplication::create([
-            'job_posting_id' => $job->id,
-            'user_id' => auth()->id(),
-            'cover_letter' => $validated['cover_letter'],
-            'resume_path' => $resumePath,
-        ]);
 
         // Notify job poster
         if ($job->poster) {
@@ -275,9 +298,9 @@ class JobPostingController extends Controller
     /**
      * Update application status.
      *
-     * Called via PUT /jobs/{job}/applications/{application} — the {job}
-     * route parameter is deliberately not bound here since only the
-     * application is needed.
+     * No notification is sent here on purpose — JobApplication::booted()
+     * (updated event) sends exactly one status-change notification to
+     * the applicant, the poster, and the admins.
      */
     public function updateApplicationStatus(Request $request, JobApplication $application)
     {
@@ -288,12 +311,7 @@ class JobPostingController extends Controller
             'notes' => 'nullable|string|max:500',
         ]);
 
-        $oldStatus = $application->status;
         $application->update($validated);
-
-        if ($oldStatus !== $application->status && in_array($application->status, ['interviewed', 'hired', 'rejected'])) {
-            $application->applicant->notify(new ApplicationStatusChangedNotification($application, $oldStatus));
-        }
 
         return redirect()->back()->with('success', 'Application status updated');
     }

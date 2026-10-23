@@ -25,6 +25,7 @@
 @endsection
 
 @section('content')
+@php($subscriberCount = $thread->subscribers()->count())
 <div class="row justify-content-center py-4">
     <div class="col-12 col-md-8">
 
@@ -48,7 +49,7 @@
                 @endif
             @endif
             <span class="text-muted small">
-                {{ $thread->subscribers()->count() }} {{ Str::plural('subscriber', $thread->subscribers()->count()) }}
+                {{ $subscriberCount }} {{ Str::plural('subscriber', $subscriberCount) }}
             </span>
         </div>
 
@@ -63,7 +64,7 @@
                             <a href="{{ route('forum.categories.show', $thread->category) }}" class="link-primary">
                                 {{ $thread->category->name }}
                             </a>
-                            • {{ $thread->created_at->diffForHumans() }}
+                            &bull; {{ $thread->created_at->diffForHumans() }}
                         </p>
                     </div>
                     @if($thread->is_pinned)
@@ -109,7 +110,7 @@
         {{ $posts->links() }}
 
         <!-- Reply Form -->
-        @can('create', App\Models\ForumPost::class)
+        @can('create', [App\Models\ForumPost::class, $thread])
         <div class="card mt-4 shadow-sm border-0">
             <div class="card-body">
                 <h5 class="fw-bold mb-3">Post a Reply</h5>

@@ -13,7 +13,6 @@ class JobApplicationNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
-
     /**
      * The job application instance.
      *
@@ -45,13 +44,13 @@ class JobApplicationNotification extends Notification implements ShouldQueue
     public function toMail($notifiable): MailMessage
     {
         return (new MailMessage)
-                    ->subject("New Application for {$this->application->job->title}")
+                    ->subject("New Application for {$this->application->jobPosting->title}")
                     ->line("{$this->application->applicant->name} has applied.")
                     ->action('View Applications', route('jobs.applications', $this->application->job_posting_id));
     }
 
     /**
-     * Get the array representation of the notification.
+     * Get the array representation of the notification (database + broadcast).
      *
      * @return array<string, mixed>
      */
@@ -67,6 +66,9 @@ class JobApplicationNotification extends Notification implements ShouldQueue
         ];
     }
 
+    /**
+     * Broadcast in real-time (Laravel Echo / Pusher).
+     */
     public function toBroadcast($notifiable)
     {
         return new BroadcastMessage($this->toArray($notifiable));

@@ -11,68 +11,41 @@ use Illuminate\Support\Facades\Notification;
 class ForumPostController extends Controller
 {
     /**
-     * Display a listing of the resource.
-     */
-    public function index()
-    {
-        //
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
      * Store a newly created resource in storage.
      */
     public function store(Request $request, ForumThread $thread)
     {
-
         $this->authorize('create', [ForumPost::class, $thread]);
 
         $request->validate([
             'content' => 'required|string|min:5',
         ]);
 
-        if ($thread->is_locked) {
-            abort(403, 'This thread is locked.');
-        }
+        $userId = auth()->id();
 
         $post = $thread->posts()->create([
-            'user_id' => auth()->id(),
+            'user_id' => $userId,
             'content' => $request->content,
         ]);
 
         // Notify thread subscribers (excluding the post author)
-        $subscribers = $thread->subscribers()->where('user_id', '!=', auth()->id())->get();
+        $subscribers = $thread->subscribers()
+            ->where('user_id', '!=', $userId)
+            ->get();
+
         Notification::send($subscribers, new NewForumPostNotification($post));
 
-        // Also notify thread author if they're not the one posting
-        if ($thread->author_id != auth()->id() && !$thread->subscribers->contains($thread->author_id)) {
+        // Also notify the thread author if they're not the one posting
+        // and are not already covered as a subscriber
+        if ($thread->user_id != $userId
+            && !$subscribers->contains(fn ($subscriber) => $subscriber->id === $thread->user_id)) {
             $thread->author->notify(new NewForumPostNotification($post));
         }
-
-        // 🔔 Notify admins
-        $admins = \App\Models\User::role('admin')->get();
-        Notification::send($admins, new NewForumPostNotification($post));
 
         return redirect()->route('forum.threads.show', [
             'thread' => $thread,
             'page' => $thread->posts()->paginate(15)->lastPage(),
         ])->withFragment('post-' . $post->id);
-
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
     }
 
     /**
@@ -80,10 +53,8 @@ class ForumPostController extends Controller
      */
     public function edit(ForumPost $post)
     {
-
         $this->authorize('update', $post);
         return view('forum.posts.edit', compact('post'));
-
     }
 
     /**
@@ -91,7 +62,6 @@ class ForumPostController extends Controller
      */
     public function update(Request $request, ForumPost $post)
     {
-
         $this->authorize('update', $post);
 
         $request->validate([
@@ -107,7 +77,6 @@ class ForumPostController extends Controller
             'page' => $post->thread->posts()->paginate(15)->lastPage(),
         ])->withFragment('post-' . $post->id)
           ->with('success', 'Post updated successfully');
-
     }
 
     /**
@@ -115,7 +84,6 @@ class ForumPostController extends Controller
      */
     public function destroy(ForumPost $post)
     {
-
         $this->authorize('delete', $post);
 
         $thread = $post->thread;
@@ -130,6 +98,5 @@ class ForumPostController extends Controller
 
         return redirect()->route('forum.threads.show', $thread)
             ->with('success', 'Post deleted successfully');
-
     }
 }

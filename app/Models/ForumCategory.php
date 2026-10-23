@@ -13,7 +13,7 @@ class ForumCategory extends Model
 
     public function threads()
     {
-        return $this->hasMany(ForumThread::class)->latest();
+        return $this->hasMany(ForumThread::class);
     }
 
     // Posts through threads
@@ -29,6 +29,11 @@ class ForumCategory extends Model
         );
     }
 
+    public function latestThread()
+    {
+        return $this->hasOne(ForumThread::class)->latestOfMany();
+    }
+
     public function getThreadCountAttribute()
     {
         return $this->threads()->count();
@@ -38,10 +43,4 @@ class ForumCategory extends Model
     {
         return $this->posts()->count();
     }
-
-    public function getLatestThreadAttribute()
-    {
-        return $this->threads()->latest()->first();
-    }
-
 }

@@ -56,13 +56,25 @@ class Event extends Model
 
     public function getAvailableSpotsAttribute()
     {
-        return $this->capacity ? max(0, $this->capacity - $this->attendees_going) : null;
+        return $this->capacity ? max(0, $this->capacity - $this->seatsTaken()) : null;
     }
 
     /** Helpers **/
+
+    /**
+     * Seats already taken: every "going" RSVP plus the guests they bring.
+     */
+    public function seatsTaken(): int
+    {
+        return (int) $this->rsvps()
+            ->where('status', 'going')
+            ->selectRaw('COUNT(*) + COALESCE(SUM(guests), 0) AS taken')
+            ->value('taken');
+    }
+
     public function isFull(): bool
     {
-        return $this->capacity && ($this->attendees_going >= $this->capacity);
+        return $this->capacity && ($this->seatsTaken() >= $this->capacity);
     }
 
     public function hasUserRsvped(User $user): bool
@@ -89,7 +101,8 @@ class Event extends Model
     /** Scopes **/
     public function scopeUpcoming($query)
     {
-        return $query->where('start', '>', now());
+        // Include events already underway — they stay listed until they end.
+        return $query->where('end', '>', now());
     }
 
     public function scopePast($query)
@@ -103,21 +116,41 @@ class Event extends Model
                      ->where('end', '>=', now());
     }
 
+    /**
+     * Note: currently dormant — nothing updates `status` yet. Guarded against
+     * a null organizer and excludes "not going" RSVPs from notifications.
+     */
     protected static function booted()
     {
         static::updated(function ($event) {
-            if ($event->isDirty('status')) {
-                $oldStatus = $event->getOriginal('status');
-                $newStatus = $event->status;
-                if ($oldStatus !== $newStatus) {
-                    $organizer = $event->organizer;
-                    $admins = User::role('admin')->get();
-                    $attendees = $event->rsvps()->with('user')->get()->pluck('user');
-                    Notification::send($organizer, new EventStatusChangedNotification($event, $oldStatus, $newStatus));
-                    Notification::send($admins, new EventStatusChangedNotification($event, $oldStatus, $newStatus));
-                    Notification::send($attendees, new EventStatusChangedNotification($event, $oldStatus, $newStatus));
-                }
+            if (! $event->isDirty('status')) {
+                return;
             }
+
+            $oldStatus = $event->getOriginal('status');
+            $newStatus = $event->status;
+
+            if ($oldStatus === $newStatus) {
+                return;
+            }
+
+            $notification = new EventStatusChangedNotification($event, $oldStatus, $newStatus);
+
+            $attendees = $event->rsvps()
+                ->whereIn('status', ['going', 'interested'])
+                ->with('user')
+                ->get()
+                ->pluck('user')
+                ->filter()
+                ->values();
+
+            Notification::send($attendees, $notification);
+
+            if ($event->organizer) {
+                $event->organizer->notify($notification);
+            }
+
+            Notification::send(User::role('admin')->get(), $notification);
         });
     }
 }

@@ -57,7 +57,7 @@ class UserObserver
     public function deleted(User $user)
     {
         ActivityLog::create([
-            'user_id' => auth()->id(),
+            'user_id' => auth()->id() ?? $user->id,
             'action' => 'deleted',
             'description' => 'User account deleted',
             'model_type' => User::class,

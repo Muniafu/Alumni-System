@@ -6,28 +6,18 @@ use Illuminate\Http\Request;
 use App\Models\ForumCategory;
 use App\Models\ForumThread;
 use Illuminate\Support\Str;
-use App\Notifications\NewForumThreadNotification;
 use App\Models\User;
-use Illuminate\Support\Facades\Notification;
 
 class ForumThreadController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
-    {
-        //
-    }
-
     /**
      * Show the form for creating a new resource.
      */
     public function create(ForumCategory $category)
     {
+        $this->authorize('create', ForumThread::class);
 
         return view('forum.threads.create', compact('category'));
-
     }
 
     /**
@@ -35,6 +25,8 @@ class ForumThreadController extends Controller
      */
     public function store(Request $request, ForumCategory $category)
     {
+        $this->authorize('create', ForumThread::class);
+
         $request->validate([
             'title' => 'required|string|max:255',
             'content' => 'required|string|min:10',
@@ -47,13 +39,8 @@ class ForumThreadController extends Controller
             'content' => $request->content,
         ]);
 
-        // 🔔 Notify admins about new thread
-        $admins = User::role('admin')->get();
-        Notification::send($admins, new NewForumThreadNotification($thread));
-
-        // 🔔 Optionally notify all users subscribed to this category
-        $subscribers = $category->subscribers()->where('user_id', '!=', auth()->id())->get();
-        Notification::send($subscribers, new NewForumThreadNotification($thread));
+        // Authors are automatically subscribed to their own threads
+        $thread->subscribe($thread->user_id);
 
         return redirect()->route('forum.threads.show', $thread)
             ->with('success', 'Thread created successfully');
@@ -64,14 +51,10 @@ class ForumThreadController extends Controller
      */
     public function show(ForumThread $thread)
     {
-
-        $thread->load(['author', 'category']);
-        $posts = $thread->posts()
-            ->with('author')
-            ->paginate(15);
+        $thread->load(['author', 'category'])->loadCount('posts');
+        $posts = $thread->posts()->with('author')->paginate(15);
 
         return view('forum.threads.show', compact('thread', 'posts'));
-
     }
 
     /**
@@ -79,10 +62,8 @@ class ForumThreadController extends Controller
      */
     public function edit(ForumThread $thread)
     {
-
         $this->authorize('update', $thread);
         return view('forum.threads.edit', compact('thread'));
-
     }
 
     /**
@@ -90,7 +71,6 @@ class ForumThreadController extends Controller
      */
     public function update(Request $request, ForumThread $thread)
     {
-
         $this->authorize('update', $thread);
 
         $request->validate([
@@ -106,7 +86,6 @@ class ForumThreadController extends Controller
 
         return redirect()->route('forum.threads.show', $thread)
             ->with('success', 'Thread updated successfully');
-
     }
 
     /**
@@ -114,7 +93,6 @@ class ForumThreadController extends Controller
      */
     public function destroy(ForumThread $thread)
     {
-
         $this->authorize('delete', $thread);
 
         $category = $thread->category;
@@ -122,16 +100,18 @@ class ForumThreadController extends Controller
 
         return redirect()->route('forum.categories.show', $category)
             ->with('success', 'Thread deleted successfully');
-
     }
+
     public function subscribe(ForumThread $thread)
     {
+        abort_unless(auth()->check(), 403);
         $thread->subscribe();
         return back()->with('success', 'You have subscribed to this thread');
     }
 
     public function unsubscribe(ForumThread $thread)
     {
+        abort_unless(auth()->check(), 403);
         $thread->unsubscribe();
         return back()->with('success', 'You have unsubscribed from this thread');
     }

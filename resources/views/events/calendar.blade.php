@@ -47,11 +47,15 @@
 
                     const titleEl = document.createElement('div');
                     titleEl.classList.add('fw-semibold');
-                    titleEl.innerHTML = '<i class="fa-solid fa-circle me-1 text-primary small"></i>' + arg.event.title;
+                    // XSS fix: user-controlled title goes in via a text node,
+                    // never through innerHTML.
+                    titleEl.innerHTML = '<i class="fa-solid fa-circle me-1 text-primary small"></i>';
+                    titleEl.append(document.createTextNode(arg.event.title));
 
                     const locationEl = document.createElement('div');
                     locationEl.classList.add('small', 'text-muted', 'mt-1');
-                    locationEl.innerHTML = '<i class="fa-solid fa-location-dot me-1 text-secondary"></i>' + location;
+                    locationEl.innerHTML = '<i class="fa-solid fa-location-dot me-1 text-secondary"></i>';
+                    locationEl.append(document.createTextNode(location || ''));
 
                     return { domNodes: [titleEl, locationEl] };
                 }

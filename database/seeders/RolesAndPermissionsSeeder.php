@@ -2,112 +2,101 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 class RolesAndPermissionsSeeder extends Seeder
 {
     /**
-     * Run the database seeds.
+     * Single source of truth for the role x permission matrix.
+     *
+     * RULES:
+     * 1. Permission names are HYPHENATED and must match every
+     *    Gate::authorize() / can() call in the controllers EXACTLY.
+     *    (The old seeder used space names — every gate silently denied.)
+     * 2. Re-running this seeder is safe: syncPermissions() makes each
+     *    role end up with exactly this matrix, no more, no less.
+     * 3. Legacy space-named permissions are deleted so stale grants
+     *    cannot linger in the DB.
      */
+    public const MATRIX = [
+        // ---- Access ----
+        'access-admin-dashboard'    => ['admin'],
+        'access-alumni-dashboard'   => ['alumni'],
+        'access-student-dashboard'  => ['student'],
+        'edit-profile'             => ['admin', 'alumni', 'student'],
+
+        // ---- Admin only ----
+        'view-pending-approvals'    => ['admin'],
+        'approve-users'            => ['admin'],
+        'manage-users'             => ['admin'],
+        'manage-permissions'       => ['admin'],
+        'generate-reports'         => ['admin'],
+
+        // ---- Jobs ----
+        'view-jobs'                => ['admin', 'alumni', 'student'],
+        'create-jobs'              => ['admin', 'alumni'],
+        'edit-jobs'                => ['admin', 'alumni'],
+        'delete-jobs'              => ['admin', 'alumni'],
+        'apply-jobs'               => ['admin', 'alumni', 'student'],
+        'view-job-applications'    => ['admin'],
+        'manage-job-applications'  => ['admin'],
+
+        // ---- Events ----
+        'view-events'              => ['admin', 'alumni', 'student'],
+        'create-events'            => ['admin', 'alumni'],
+        'edit-events'              => ['admin', 'alumni'],
+        'delete-events'            => ['admin', 'alumni'],
+        'rsvp-events'              => ['admin', 'alumni', 'student'],
+
+        // ---- Forums ----
+        'view-forums'              => ['admin', 'alumni', 'student'],
+        'create-forums'            => ['admin', 'alumni', 'student'],
+
+        // ---- Mentorship ----
+        'view-mentorship'          => ['admin', 'alumni', 'student'],
+        'create-mentorship'        => ['admin', 'alumni'],
+        'request-mentorship'       => ['admin', 'alumni', 'student'],
+    ];
+
     public function run(): void
     {
+        $registrar = app()[PermissionRegistrar::class];
+        $registrar->forgetCachedPermissions();
 
-        // Reset cached roles and permissions
-        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
-
-        // Create permissions
-        $permissions = [
-            'view dashboard',
-            'view admin dashboard',
-            'view alumni dashboard',
-            'view student dashboard',
-            'manage users',
-            'approve users',
-            'edit profile',
-            'view pending approvals',
-            'create jobs',
-            'edit jobs',
-            'delete jobs',
-            'view job applications',
-            'manage job applications',
-            'view events',
-            'create events',
-            'edit events',
-            'delete events',
-            'rsvp events',
-            'manage permissions'
-        ];
-
-        foreach ($permissions as $permission) {
-            Permission::create(['name' => $permission]);
+        foreach (['admin', 'alumni', 'student'] as $roleName) {
+            Role::firstOrCreate(['name' => $roleName, 'guard_name' => 'web']);
         }
 
-        // Create roles and assign permissions
-        $adminRole = Role::create(['name' => 'admin']);
-        $adminRole->givePermissionTo([
-            'view dashboard',
-            'view admin dashboard',
-            'manage users',
-            'approve users',
-            'view pending approvals',
-        ]);
+        // Delete any permission not in the matrix (removes the old
+        // space-named set: "view admin dashboard", "approve users", ...).
+        Permission::where('guard_name', 'web')
+            ->whereNotIn('name', array_keys(self::MATRIX))
+            ->delete();
 
-        $alumniRole = Role::create(['name' => 'alumni']);
-        $alumniRole->givePermissionTo([
-            'view dashboard',
-            'view alumni dashboard',
-            'edit profile',
-        ]);
+        $byRole = [];
 
-        $studentRole = Role::create(['name' => 'student']);
-        $studentRole->givePermissionTo([
-            'view dashboard',
-            'view student dashboard',
-            'edit profile',
-        ]);
+        foreach (self::MATRIX as $permission => $roles) {
+            Permission::firstOrCreate([
+                'name' => $permission,
+                'guard_name' => 'web',
+            ]);
 
-        // Assign permissions
-        $adminRole = Role::where('name', 'admin')->first();
-        $adminRole->givePermissionTo([
-            'view dashboard',
-            'view admin dashboard',
-            'manage users',
-            'approve users',
-            'view pending approvals',
-            'create jobs',
-            'edit jobs',
-            'delete jobs',
-            'view job applications',
-            'manage job applications',
-            'create events',
-            'edit events',
-            'delete events',
-            'manage permissions',
-        ]);
+            foreach ($roles as $role) {
+                $byRole[$role][] = $permission;
+            }
+        }
 
-        $alumniRole = Role::where('name', 'alumni')->first();
-        $alumniRole->givePermissionTo([
-            'view dashboard',
-            'view alumni dashboard',
-            'edit profile',
-            'create jobs',
-            'edit jobs',
-            'delete jobs',
-            'view job applications',
-            'view events',
-            'rsvp events',
-        ]);
+        // Deterministic: re-running always converges to exactly MATRIX.
+        foreach ($byRole as $roleName => $permissions) {
+            Role::where('name', $roleName)
+                ->where('guard_name', 'web')
+                ->first()
+                ->syncPermissions($permissions);
+        }
 
-        $studentRole = Role::where('name', 'student')->first();
-        $studentRole->givePermissionTo([
-            'view dashboard',
-            'view student dashboard',
-            'edit profile',
-            'view events',
-            'rsvp events',
-        ]);
+        $registrar->forgetCachedPermissions();
     }
 }

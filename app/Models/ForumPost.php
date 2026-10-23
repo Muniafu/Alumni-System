@@ -12,16 +12,6 @@ class ForumPost extends Model
 
     protected $fillable = ['forum_thread_id', 'user_id', 'content'];
 
-    public function create(User $user): bool
-    {
-        return $user->is_approved;
-    }
-
-    public function view(User $user, ForumPost $post): bool
-    {
-        return true; // anyone can view
-    }
-
     public function thread()
     {
         return $this->belongsTo(ForumThread::class, 'forum_thread_id');
@@ -31,5 +21,4 @@ class ForumPost extends Model
     {
         return $this->belongsTo(User::class, 'user_id');
     }
-
 }

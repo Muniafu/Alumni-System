@@ -44,7 +44,7 @@
             <div class="card-body">
                 <h5 class="card-title text-dark">Quick Actions</h5>
                 <div class="list-group">
-                    @can('view events')
+                    @can('view-events')
                     <a href="{{ route('events.index') }}" class="list-group-item list-group-item-action d-flex align-items-start">
                         <i class="fa-solid fa-calendar-days text-primary me-3 fs-4"></i>
                         <div>
@@ -70,7 +70,7 @@
                         </div>
                     </a>
 
-                    @can('access forum')
+                    @can('view-forums')
                     <a href="{{ route('forum.index') }}" class="list-group-item list-group-item-action d-flex align-items-start">
                         <i class="fa-solid fa-comments text-info me-3 fs-4"></i>
                         <div>
@@ -86,7 +86,7 @@
 </div>
 
 <!-- Upcoming Events -->
-@can('view events')
+@can('view-events')
 <div class="mt-5">
     <h3 class="fw-semibold text-dark mb-3">Upcoming Events</h3>
     <div class="row g-4">

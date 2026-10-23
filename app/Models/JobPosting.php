@@ -14,7 +14,6 @@ class JobPosting extends Model
 {
     use HasFactory, SoftDeletes;
 
-
     protected $fillable = [
         'title',
         'description',
@@ -54,7 +53,7 @@ class JobPosting extends Model
 
     public function scopeActive($query)
     {
-        return $query->where(function($q) {
+        return $query->where(function ($q) {
             $q->where('application_deadline', '>=', now())
             ->orWhereNull('application_deadline');
         })
@@ -96,6 +95,11 @@ class JobPosting extends Model
         return 'active';
     }
 
+    /**
+     * Can the given user apply to this posting?
+     * Checks: logged in, posting still active, deadline not passed,
+     * and no existing application from this user.
+     */
     public function canApply(User $user = null)
     {
         $user = $user ?? auth()->user();
@@ -111,34 +115,77 @@ class JobPosting extends Model
         return !$this->applications()->where('user_id', $user->id)->exists();
     }
 
+    /**
+     * Lifecycle notifications live HERE (single source of truth) so they
+     * fire exactly once regardless of which code path creates, updates,
+     * or deletes a posting — controller, admin bulk actions, or tinker.
+     */
     protected static function booted()
     {
         static::created(function ($job) {
-            $students = User::where('is_approved', true)->whereHas('roles', fn($q) => $q->where('name', 'student'))->get();
-            $admins = User::role('admin')->get();
-            Notification::send($students->merge($admins), new \App\Notifications\NewJobPostedNotification($job));
+            $recipients = User::query()
+                ->where('is_approved', true)
+                ->where('id', '!=', $job->user_id)
+                ->whereHas('roles', fn ($q) => $q->whereIn('name', ['alumni', 'student', 'admin']))
+                ->get();
+
+            Notification::send(
+                $recipients,
+                new \App\Notifications\NewJobPostedNotification($job)
+            );
         });
 
         static::deleted(function ($job) {
-            $allUsers = User::where('is_approved', true)->whereHas('roles', fn($q) => $q->whereIn('name', ['alumni', 'student', 'admin']))->get();
-            $applicants = $job->applications()->with('applicant')->get()->pluck('applicant');
+            // Only the people who invested in the posting need to know:
+            // the applicants plus the admins — not the whole platform.
+            $applicants = $job->applications()
+                ->with('applicant')
+                ->get()
+                ->pluck('applicant')
+                ->filter()
+                ->unique('id')
+                ->values();
+
+            $admins = User::role('admin')->get();
+
             $deletedBy = auth()->check() ? auth()->user()->name : 'System';
-            Notification::send($allUsers->merge($applicants)->unique('id'), new \App\Notifications\JobDeletedNotification($job->title, $deletedBy));
+
+            Notification::send(
+                $applicants->merge($admins)->unique('id')->values(),
+                new \App\Notifications\JobDeletedNotification($job->title, $deletedBy)
+            );
         });
 
         static::updated(function ($job) {
-            if ($job->isDirty('is_active')) {
-                $oldStatus = $job->getOriginal('is_active') ? 'active' : 'inactive';
-                $newStatus = $job->is_active ? 'active' : 'inactive';
-                if ($oldStatus !== $newStatus) {
-                    $poster = $job->poster;
-                    $admins = User::role('admin')->get();
-                    $applicants = $job->applications()->with('applicant')->get()->pluck('applicant');
-                    Notification::send($poster, new JobStatusChangedNotification($job, $oldStatus, $newStatus));
-                    Notification::send($admins, new JobStatusChangedNotification($job, $oldStatus, $newStatus));
-                    Notification::send($applicants, new JobStatusChangedNotification($job, $oldStatus, $newStatus));
-                }
+            if (!$job->isDirty('is_active')) {
+                return;
             }
+
+            $oldStatus = $job->getOriginal('is_active') ? 'active' : 'inactive';
+            $newStatus = $job->is_active ? 'active' : 'inactive';
+
+            if ($oldStatus === $newStatus) {
+                return;
+            }
+
+            $applicants = $job->applications()
+                ->with('applicant')
+                ->get()
+                ->pluck('applicant')
+                ->filter()
+                ->unique('id')
+                ->values();
+
+            $recipients = $applicants->merge(User::role('admin')->get());
+
+            if ($job->poster) {
+                $recipients = $recipients->merge([$job->poster]);
+            }
+
+            Notification::send(
+                $recipients->unique('id')->values(),
+                new JobStatusChangedNotification($job, $oldStatus, $newStatus)
+            );
         });
     }
 }
