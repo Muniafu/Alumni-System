@@ -77,13 +77,13 @@
                 <p class="card-text mt-3 text-truncate-2">{{ Str::limit($job->description, 200) }}</p>
 
                 <!-- Skills -->
-                @if($job->skills_required)
+                @php($skillsRequired = is_array($job->skills_required) ? $job->skills_required : array_filter(array_map('trim', explode(',', $job->skills_required)))) @if(count($skillsRequired))
                 <div class="mt-2 d-flex flex-wrap gap-1">
-                    @foreach(array_slice($job->skills_required, 0, 3) as $skill)
+                    @foreach(array_slice($skillsRequired, 0, 3) as $skill)
                     <span class="badge bg-light text-dark">{{ $skill }}</span>
                     @endforeach
-                    @if(count($job->skills_required) > 3)
-                    <span class="badge bg-light text-dark">+{{ count($job->skills_required) - 3 }} more</span>
+                    @if(count($skillsRequired) > 3)
+                    <span class="badge bg-light text-dark">+{{ count($skillsRequired) - 3 }} more</span>
                     @endif
                 </div>
                 @endif

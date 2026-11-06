@@ -26,10 +26,27 @@
                             <dd class="col-sm-8">{{ $user->email }}</dd>
 
                             <dt class="col-sm-4">Role</dt>
-                            <dd class="col-sm-8">{{ $user->role ?? 'N/A' }}</dd>
+                            <dd class="col-sm-8">
+                                {{ $user->roles->pluck('name')->map(fn ($r) => ucfirst($r))->join(', ') ?: 'N/A' }}
+                            </dd>
 
                             <dt class="col-sm-4">Joined</dt>
                             <dd class="col-sm-8">{{ $user->created_at->format('d M Y') }}</dd>
+
+                            @if ($profile)
+                                @if ($profile->current_job)
+                                    <dt class="col-sm-4">Current Job</dt>
+                                    <dd class="col-sm-8">{{ $profile->current_job }}</dd>
+                                @endif
+
+                                @if ($profile->company)
+                                    <dt class="col-sm-4">Company</dt>
+                                    <dd class="col-sm-8">{{ $profile->company }}</dd>
+                                @endif
+
+                                <dt class="col-sm-4">Profile Completion</dt>
+                                <dd class="col-sm-8">{{ $profile->profile_completion }}%</dd>
+                            @endif
                         </dl>
                     </div>
                     <div class="card-footer text-end">

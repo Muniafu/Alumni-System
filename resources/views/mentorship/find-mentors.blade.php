@@ -5,6 +5,11 @@
     <h2 class="fw-semibold text-primary mb-0">
         <i class="fa-solid fa-user-tie me-2"></i> Find Mentors
     </h2>
+    @can('create-mentorship')
+        <a href="{{ route('mentorship.create') }}" class="btn btn-outline-primary">
+            <i class="fa-solid fa-plus me-1"></i> Sign Up as a Mentor
+        </a>
+    @endcan
 </div>
 @endsection
 
@@ -15,13 +20,13 @@
             <div class="card shadow-sm border-0">
                 <div class="card-header bg-light">
                     <h4 class="mb-1">Available Mentors</h4>
-                    <p class="mb-0 text-secondary">Browse alumni who are available for mentorship</p>
+                    <p class="mb-0 text-secondary">Browse alumni who have signed up to mentor</p>
                 </div>
 
                 <div class="card-body">
                     @if($mentors->isEmpty())
                         <div class="alert alert-info mb-0">
-                            <i class="fa-solid fa-info-circle me-2"></i>No mentors available at this time.
+                            <i class="fa-solid fa-info-circle me-2"></i>No mentors have signed up yet.
                         </div>
                     @else
                         <div class="row">
@@ -36,10 +41,14 @@
                                                 <div>
                                                     <h5 class="mb-0">{{ $mentor->name }}</h5>
                                                     <p class="text-secondary mb-0">
-                                                        {{ $mentor->profile->current_job ?? 'Alumni' }}
+                                                        {{ $mentor->mentorProfile->expertise }}
                                                     </p>
                                                 </div>
                                             </div>
+
+                                            @if($mentor->mentorProfile->bio)
+                                                <p class="text-secondary small mb-3">{{ Str::limit($mentor->mentorProfile->bio, 120) }}</p>
+                                            @endif
 
                                             @if($mentor->profile->skills && count($mentor->profile->skills) > 0)
                                                 <div class="mb-3">

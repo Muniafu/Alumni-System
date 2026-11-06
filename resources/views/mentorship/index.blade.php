@@ -28,7 +28,7 @@
                                     @endif
                                 </h5>
                                 <p class="text-secondary mb-2">
-                                    Started {{ $mentorship->start_date->format('M j, Y') }}
+                                    Started {{ $mentorship->start_date?->format('M j, Y') }}
                                     @if($mentorship->end_date)
                                         • Ended {{ $mentorship->end_date->format('M j, Y') }}
                                     @endif
@@ -40,7 +40,7 @@
                                     text-capitalize mb-2">
                                     {{ $mentorship->status }}
                                 </span>
-                                <p class="text-secondary mb-0">{{ Str::limit($mentorship->goal, 120) }}</p>
+                                <p class="text-secondary mb-0">{{ Str::limit($mentorship->goal ?? "", 120) }}</p>
                             </div>
                             <div class="text-end">
                                 <a href="{{ route('mentorship.show', $mentorship) }}" class="btn btn-outline-primary btn-sm">

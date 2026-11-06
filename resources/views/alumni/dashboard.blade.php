@@ -288,7 +288,7 @@
 <div class="mt-5">
     <h3 class="fw-semibold text-dark mb-3">Forum Categories</h3>
     @can('create-forums')
-        <a href="{{ route('forum.threads.create') }}" class="btn btn-info btn-sm">Create Thread</a>
+        <a href="{{ ($forumCategories && $forumCategories->isNotEmpty()) ? route('forum.threads.create', $forumCategories->first()) : '#' }}" class="btn btn-info btn-sm">Create Thread</a>
     @endcan
     @if($forumCategories && $forumCategories->count() > 0)
         <div class="row g-3">

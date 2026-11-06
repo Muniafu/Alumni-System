@@ -69,19 +69,14 @@
                         </div>
                     </div>
 
-                    {{-- Student/Alumni Information --}}
+                    {{-- Student/Alumni Information (role-dependent) --}}
                     <div class="col-md-6" id="studentFields" style="display:none;">
                         <h5 class="fw-bold text-success mb-3">
                             <i class="bi bi-mortarboard-fill me-2"></i> Student/Alumni Information
                         </h5>
 
-                        {{-- Student ID --}}
-                        <div class="mb-3">
-                            <label for="student_id" class="form-label fw-semibold">Student ID</label>
-                            <input id="student_id" type="text" name="student_id" value="{{ old('student_id') }}"
-                                   class="form-control @error('student_id') is-invalid @enderror">
-                            @error('student_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                        </div>
+                        {{-- NOTE: the student ID is generated automatically on save
+                             (STU + year + random), so there is no input for it. --}}
 
                         {{-- Graduation Year --}}
                         <div class="mb-3">
@@ -112,32 +107,6 @@
                             @error('program') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
                     </div>
-
-                    {{-- Admin Information --}}
-                    <div class="col-md-6" id="adminFields" style="display:none;">
-                        <h5 class="fw-bold text-danger mb-3">
-                            <i class="bi bi-shield-lock-fill me-2"></i> Admin Information
-                        </h5>
-
-                        {{-- Department --}}
-                        <div class="mb-3">
-                            <label for="department" class="form-label fw-semibold">Department</label>
-                            <input id="department" type="text" name="department" value="{{ old('department') }}"
-                                   class="form-control @error('department') is-invalid @enderror">
-                            @error('department') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                        </div>
-
-                        {{-- Permissions --}}
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Special Permissions</label>
-                            <select name="permissions[]" multiple class="form-select">
-                                <option value="manage_users">Manage Users</option>
-                                <option value="manage_events">Manage Events</option>
-                                <option value="manage_jobs">Manage Jobs</option>
-                                <option value="manage_forum">Manage Forum</option>
-                            </select>
-                        </div>
-                    </div>
                 </div>
 
                 {{-- Actions --}}
@@ -160,18 +129,9 @@
     function toggleRoleFields() {
         const role = document.getElementById('role').value;
         const studentFields = document.getElementById('studentFields');
-        const adminFields = document.getElementById('adminFields');
-
-        if (role === 'student' || role === 'alumni') {
-            studentFields.style.display = 'block';
-            adminFields.style.display = 'none';
-        } else if (role === 'admin') {
-            adminFields.style.display = 'block';
-            studentFields.style.display = 'none';
-        } else {
-            studentFields.style.display = 'none';
-            adminFields.style.display = 'none';
-        }
+        // Permissions are role-based in this app — administer them on the
+        // Permissions page, not per user.
+        studentFields.style.display = (role === 'student' || role === 'alumni') ? 'block' : 'none';
     }
     document.getElementById('role').addEventListener('change', toggleRoleFields);
     toggleRoleFields(); // run on page load

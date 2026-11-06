@@ -5,6 +5,20 @@
     <h2 class="fw-semibold text-primary mb-0">
         <i class="fa-solid fa-comments me-2"></i> Conversation
     </h2>
+    <div class="d-flex gap-2">
+        <a href="{{ route('conversations.index') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="fa-solid fa-arrow-left me-1"></i> Back
+        </a>
+        <form method="POST"
+              action="{{ route('conversations.destroy', $conversation) }}"
+              onsubmit="return confirm('Leave this conversation?');">
+            @csrf
+            @method('DELETE')
+            <button type="submit" class="btn btn-outline-danger btn-sm">
+                <i class="fa-solid fa-right-from-bracket me-1"></i> Leave
+            </button>
+        </form>
+    </div>
 </div>
 @endsection
 
@@ -29,7 +43,10 @@
         <!-- Messages Container -->
         <div class="card shadow-sm border-0 mb-4" style="height: 500px; overflow-y: auto;">
             <div class="card-body d-flex flex-column gap-3">
-                @forelse($messages as $message)
+                {{-- Page 1 holds the NEWEST messages; reverse the page so the
+                      chat reads top-to-bottom and the newest sit at the
+                      bottom, where the container auto-scrolls. --}}
+                @forelse($messages->reverse() as $message)
                     <div class="d-flex {{ $message->sender->id === auth()->id() ? 'justify-content-end' : 'justify-content-start' }}">
                         <div class="p-3 rounded shadow-sm
                             {{ $message->sender->id === auth()->id() ? 'bg-primary text-white' : 'bg-light text-dark' }}"
@@ -39,6 +56,19 @@
                                 <small class="text-muted ms-2">{{ $message->created_at->diffForHumans() }}</small>
                             </div>
                             <p class="mb-0">{{ $message->body }}</p>
+                            @can('delete', $message)
+                                <form method="POST"
+                                      action="{{ route('conversations.messages.destroy', [$conversation, $message]) }}"
+                                      onsubmit="return confirm('Delete this message?');"
+                                      class="mt-1">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit"
+                                            class="btn btn-link btn-sm p-0 {{ $message->sender->id === auth()->id() ? 'text-white-50' : 'text-danger' }}">
+                                        <i class="fa-solid fa-trash-can me-1"></i>Delete
+                                    </button>
+                                </form>
+                            @endcan
                         </div>
                     </div>
                 @empty
@@ -55,7 +85,9 @@
         <!-- Send Message Form -->
         <div class="card shadow-sm border-0">
             <div class="card-body">
-                <form method="POST" action="{{ route('messages.store', $conversation) }}">
+                {{-- Route name fixed: the nested resource is registered as
+                      conversations.messages.store, NOT messages.store. --}}
+                <form method="POST" action="{{ route('conversations.messages.store', $conversation) }}">
                     @csrf
                     <div class="mb-3">
                         <label for="body" class="form-label visually-hidden">Message</label>

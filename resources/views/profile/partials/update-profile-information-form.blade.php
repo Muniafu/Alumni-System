@@ -86,6 +86,15 @@
                 @error('company') <div class="invalid-feedback">{{ $message }}</div> @enderror
             </div>
 
+            {{-- Education --}}
+            <div class="mb-3">
+                <label for="education" class="form-label">Education</label>
+                <input type="text" id="education" name="education"
+                    value="{{ old('education', $profile->education) }}"
+                    class="form-control @error('education') is-invalid @enderror">
+                @error('education') <div class="invalid-feedback">{{ $message }}</div> @enderror
+            </div>
+
             {{-- Bio --}}
             <div class="mb-3">
                 <label for="bio" class="form-label">Bio</label>
@@ -112,13 +121,49 @@
                 @error('interests') <div class="invalid-feedback">{{ $message }}</div> @enderror
             </div>
 
-            {{-- Social Links --}}
+            {{-- Certifications --}}
             <div class="mb-3">
-                <label class="form-label">Social Links (linkedin, twitter, github, website)</label>
-                <input type="text" name="social_links"
-                    value="{{ old('social_links', implode(',', $profile->socialLinksArray)) }}"
-                    class="form-control @error('social_links') is-invalid @enderror">
-                @error('social_links') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                <label for="certifications" class="form-label">Certifications (comma-separated)</label>
+                <input type="text" id="certifications" name="certifications"
+                    value="{{ old('certifications', implode(',', $profile->certificationsArray)) }}"
+                    class="form-control @error('certifications') is-invalid @enderror">
+                @error('certifications') <div class="invalid-feedback">{{ $message }}</div> @enderror
+            </div>
+
+            {{-- Social Links (named fields, matching the controller + model) --}}
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label for="linkedin" class="form-label">LinkedIn URL</label>
+                    <input type="url" id="linkedin" name="linkedin"
+                        value="{{ old('linkedin', $profile->getSocialLink('linkedin')) }}"
+                        placeholder="https://linkedin.com/in/..."
+                        class="form-control @error('linkedin') is-invalid @enderror">
+                    @error('linkedin') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                </div>
+                <div class="col-md-6">
+                    <label for="twitter" class="form-label">Twitter URL</label>
+                    <input type="url" id="twitter" name="twitter"
+                        value="{{ old('twitter', $profile->getSocialLink('twitter')) }}"
+                        placeholder="https://twitter.com/..."
+                        class="form-control @error('twitter') is-invalid @enderror">
+                    @error('twitter') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                </div>
+                <div class="col-md-6">
+                    <label for="github" class="form-label">GitHub URL</label>
+                    <input type="url" id="github" name="github"
+                        value="{{ old('github', $profile->getSocialLink('github')) }}"
+                        placeholder="https://github.com/..."
+                        class="form-control @error('github') is-invalid @enderror">
+                    @error('github') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                </div>
+                <div class="col-md-6">
+                    <label for="website" class="form-label">Website URL</label>
+                    <input type="url" id="website" name="website"
+                        value="{{ old('website', $profile->getSocialLink('website')) }}"
+                        placeholder="https://..."
+                        class="form-control @error('website') is-invalid @enderror">
+                    @error('website') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                </div>
             </div>
 
             {{-- Actions --}}

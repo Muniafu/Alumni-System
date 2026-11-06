@@ -41,7 +41,22 @@
                             @error('email') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
 
-                        {{-- Role --}}
+                        {{-- New Password (optional) --}}
+                        <div class="mb-3">
+                            <label for="password" class="form-label fw-semibold">New Password <span class="text-muted">(leave blank to keep current)</span></label>
+                            <input id="password" type="password" name="password" autocomplete="new-password"
+                                   class="form-control @error('password') is-invalid @enderror">
+                            @error('password') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="password_confirmation" class="form-label fw-semibold">Confirm New Password</label>
+                            <input id="password_confirmation" type="password" name="password_confirmation"
+                                   class="form-control @error('password_confirmation') is-invalid @enderror">
+                            @error('password_confirmation') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        </div>
+
+                        {{-- Role (null-safe: a user without a role used to crash this page) --}}
                         <div class="mb-3">
                             <label for="role" class="form-label fw-semibold">Role</label>
                             <select id="role" name="role"
@@ -49,7 +64,7 @@
                                 <option value="">Select Role</option>
                                 @foreach($roles as $role)
                                     <option value="{{ $role->name }}"
-                                        {{ old('role', $user->roles->first()->name) == $role->name ? 'selected' : '' }}>
+                                        {{ old('role', $user->roles->first()?->name) == $role->name ? 'selected' : '' }}>
                                         {{ ucfirst($role->name) }}
                                     </option>
                                 @endforeach
@@ -64,13 +79,11 @@
                             <i class="bi bi-mortarboard-fill me-2"></i> Student / Alumni Information
                         </h5>
 
-                        {{-- Student ID --}}
+                        {{-- Student ID (read-only: generated server-side) --}}
                         <div class="mb-3">
                             <label for="student_id" class="form-label fw-semibold">Student ID</label>
-                            <input id="student_id" type="text" name="student_id"
-                                   value="{{ old('student_id', $user->student_id) }}"
-                                   class="form-control @error('student_id') is-invalid @enderror">
-                            @error('student_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            <input id="student_id" type="text" class="form-control" value="{{ $user->student_id ?? 'N/A' }}" readonly>
+                            <div class="form-text">Student IDs are generated automatically and cannot be edited.</div>
                         </div>
 
                         {{-- Graduation Year --}}
@@ -104,33 +117,6 @@
                             @error('program') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
                     </div>
-
-                    {{-- Admin Information --}}
-                    <div class="col-md-6" id="adminFields" style="display:none;">
-                        <h5 class="fw-bold text-danger mb-3">
-                            <i class="bi bi-shield-lock-fill me-2"></i> Admin Information
-                        </h5>
-
-                        {{-- Department --}}
-                        <div class="mb-3">
-                            <label for="department" class="form-label fw-semibold">Department</label>
-                            <input id="department" type="text" name="department"
-                                   value="{{ old('department', $user->department) }}"
-                                   class="form-control @error('department') is-invalid @enderror">
-                            @error('department') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                        </div>
-
-                        {{-- Permissions --}}
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Special Permissions</label>
-                            <select name="permissions[]" multiple class="form-select">
-                                <option value="manage_users" {{ in_array('manage_users', old('permissions', [])) ? 'selected' : '' }}>Manage Users</option>
-                                <option value="manage_events" {{ in_array('manage_events', old('permissions', [])) ? 'selected' : '' }}>Manage Events</option>
-                                <option value="manage_jobs" {{ in_array('manage_jobs', old('permissions', [])) ? 'selected' : '' }}>Manage Jobs</option>
-                                <option value="manage_forum" {{ in_array('manage_forum', old('permissions', [])) ? 'selected' : '' }}>Manage Forum</option>
-                            </select>
-                        </div>
-                    </div>
                 </div>
 
                 {{-- Actions --}}
@@ -152,19 +138,8 @@
 <script>
     function toggleRoleFields() {
         const role = document.getElementById('role').value;
-        const studentFields = document.getElementById('studentFields');
-        const adminFields = document.getElementById('adminFields');
-
-        if (role === 'student' || role === 'alumni') {
-            studentFields.style.display = 'block';
-            adminFields.style.display = 'none';
-        } else if (role === 'admin') {
-            adminFields.style.display = 'block';
-            studentFields.style.display = 'none';
-        } else {
-            studentFields.style.display = 'none';
-            adminFields.style.display = 'none';
-        }
+        document.getElementById('studentFields').style.display =
+            (role === 'student' || role === 'alumni') ? 'block' : 'none';
     }
     document.getElementById('role').addEventListener('change', toggleRoleFields);
     toggleRoleFields(); // run on page load

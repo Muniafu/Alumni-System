@@ -29,6 +29,9 @@
                                         @foreach($conversation->otherUsers as $user)
                                             {{ $user->name }}@if(!$loop->last), @endif
                                         @endforeach
+                                        @if($conversation->isUnread)
+                                            <span class="badge bg-primary rounded-pill ms-1">New</span>
+                                        @endif
                                     </div>
                                     <p class="mb-1 text-truncate text-muted">
                                         {{ $conversation->latestMessage->body ?? 'No messages yet.' }}

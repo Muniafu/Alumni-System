@@ -97,7 +97,7 @@
                     <h5 class="card-title text-primary">{{ $event->title }}</h5>
                     <p class="text-muted small mb-2">
                         <i class="fa-regular fa-clock me-1"></i>
-                        {{ $event->start_date->format('M j, Y g:i A') }}
+                        {{ $event->start->format('M j, Y g:i A') }}
                     </p>
                     <p class="text-truncate-2 text-secondary small">{{ $event->description }}</p>
                     <a href="{{ route('events.show', $event) }}" class="btn btn-sm btn-outline-primary mt-2">

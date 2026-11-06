@@ -69,11 +69,11 @@
                         </div>
 
                         <!-- Required Skills -->
-                        @if($job->skills_required && count($job->skills_required))
+                        @php($skillsRequired = is_array($job->skills_required) ? $job->skills_required : array_filter(array_map('trim', explode(',', $job->skills_required)))) @if(count($skillsRequired))
                         <div class="mb-4">
                             <h5 class="fw-semibold mb-2">Required Skills</h5>
                             <div class="d-flex flex-wrap gap-2">
-                                @foreach($job->skills_required as $skill)
+                                @foreach($skillsRequired as $skill)
                                     <span class="badge bg-light text-dark">{{ $skill }}</span>
                                 @endforeach
                             </div>
@@ -81,11 +81,11 @@
                         @endif
 
                         <!-- Preferred Skills -->
-                        @if($job->skills_preferred && count($job->skills_preferred))
+                        @php($skillsPreferred = is_array($job->skills_preferred) ? $job->skills_preferred : array_filter(array_map('trim', explode(',', $job->skills_preferred)))) @if(count($skillsPreferred))
                         <div class="mb-4">
                             <h5 class="fw-semibold mb-2">Preferred Skills</h5>
                             <div class="d-flex flex-wrap gap-2">
-                                @foreach($job->skills_preferred as $skill)
+                                @foreach($skillsPreferred as $skill)
                                     <span class="badge bg-info text-dark">{{ $skill }}</span>
                                 @endforeach
                             </div>

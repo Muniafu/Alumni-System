@@ -14,8 +14,7 @@
             {{-- Header --}}
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div class="d-flex align-items-center">
-                    <img src="{{ $user->profile->avatar ?? 'https://ui-avatars.com/api/?name='.urlencode($user->name) }}"
-                         class="rounded-circle me-3" width="60" height="60" alt="User Avatar">
+                    <img src="{{ $user->profile_photo_url }}" class="rounded-circle me-3" width="60" height="60" alt="User Avatar">
                     <div>
                         <h5 class="fw-bold text-primary mb-1">{{ $user->name }}</h5>
                         <span class="badge {{ $user->is_approved ? 'bg-success' : 'bg-warning text-dark' }}">
@@ -63,7 +62,8 @@
                         <ul class="list-group list-group-flush">
                             <li class="list-group-item"><strong>Current Job:</strong> {{ $user->profile->current_job ?? 'N/A' }}</li>
                             <li class="list-group-item"><strong>Company:</strong> {{ $user->profile->company ?? 'N/A' }}</li>
-                            <li class="list-group-item"><strong>Skills:</strong> {{ !empty($user->profile->skills) ? implode(', ', $user->profile->skills) : 'N/A' }}</li>
+                            {{-- skills is stored as a comma-separated string — implode() on it crashed this page --}}
+                            <li class="list-group-item"><strong>Skills:</strong> {{ $user->profile->skills ?: 'N/A' }}</li>
                         </ul>
                     @else
                         <p class="text-muted">No profile information available.</p>
@@ -94,24 +94,26 @@
                             </h2>
                             <div id="collapseEvents" class="accordion-collapse collapse" data-bs-parent="#activityAccordion">
                                 <div class="accordion-body">
-                                    @forelse($user->events as $event)
-                                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                                            <span>
-                                                <strong>{{ $event->title }}</strong>
-                                                <small class="text-muted">({{ $event->start->format('M d, Y') }} - {{ $event->end->format('M d, Y') }})</small>
-                                                <br>
-                                                <span class="badge
-                                                    @if($event->pivot->status === 'going') bg-success
-                                                    @elseif($event->pivot->status === 'interested') bg-warning
-                                                    @else bg-secondary @endif">
-                                                    {{ ucfirst($event->pivot->status) }}
+                                    <ul class="list-group list-group-flush">
+                                        @forelse($user->events as $event)
+                                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                <span>
+                                                    <strong>{{ $event->title }}</strong>
+                                                    <small class="text-muted">({{ $event->start->format('M d, Y') }} - {{ $event->end->format('M d, Y') }})</small>
+                                                    <br>
+                                                    <span class="badge
+                                                        @if($event->pivot->status === 'going') bg-success
+                                                        @elseif($event->pivot->status === 'interested') bg-warning
+                                                        @else bg-secondary @endif">
+                                                        {{ ucfirst($event->pivot->status) }}
+                                                    </span>
                                                 </span>
-                                            </span>
-                                            <a href="{{ route('events.show', $event) }}" class="btn btn-sm btn-outline-primary">View</a>
-                                        </li>
-                                    @empty
-                                        <p class="text-muted mb-0">No events attended yet.</p>
-                                    @endforelse
+                                                <a href="{{ route('events.show', $event) }}" class="btn btn-sm btn-outline-primary">View</a>
+                                            </li>
+                                        @empty
+                                            <p class="text-muted mb-0">No events attended yet.</p>
+                                        @endforelse
+                                    </ul>
                                 </div>
                             </div>
                         </div>
@@ -125,17 +127,21 @@
                             </h2>
                             <div id="collapseJobs" class="accordion-collapse collapse" data-bs-parent="#activityAccordion">
                                 <div class="accordion-body">
-                                    @forelse($user->jobApplications as $application)
-                                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                                            <span>
-                                                <strong>{{ $application->jobPosting->title }}</strong>
-                                                <small class="text-muted">Applied: {{ $application->created_at->format('M d, Y') }}</small>
-                                            </span>
-                                            <a href="{{ route('jobs.show', $application->jobPosting) }}" class="btn btn-sm btn-outline-primary">View</a>
-                                        </li>
-                                    @empty
-                                        <p class="text-muted mb-0">No job applications yet.</p>
-                                    @endforelse
+                                    <ul class="list-group list-group-flush">
+                                        @forelse($user->jobApplications as $application)
+                                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                <span>
+                                                    <strong>{{ $application->jobPosting?->title ?? 'Deleted posting' }}</strong>
+                                                    <small class="text-muted">Applied: {{ $application->created_at->format('M d, Y') }}</small>
+                                                </span>
+                                                @if($application->jobPosting)
+                                                    <a href="{{ route('jobs.show', $application->jobPosting) }}" class="btn btn-sm btn-outline-primary">View</a>
+                                                @endif
+                                            </li>
+                                        @empty
+                                            <p class="text-muted mb-0">No job applications yet.</p>
+                                        @endforelse
+                                    </ul>
                                 </div>
                             </div>
                         </div>
@@ -149,17 +155,23 @@
                             </h2>
                             <div id="collapsePosts" class="accordion-collapse collapse" data-bs-parent="#activityAccordion">
                                 <div class="accordion-body">
-                                    @forelse($user->forumPosts as $post)
-                                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                                            <span>
-                                                <strong>{{ Str::limit($post->content, 50) }}</strong>
-                                                <small class="text-muted">in {{ $post->thread->title ?? 'Unknown Thread' }}</small>
-                                            </span>
-                                            <a href="{{ route('forum.thread.show', $post->thread) }}" class="btn btn-sm btn-outline-primary">View</a>
-                                        </li>
-                                    @empty
-                                        <p class="text-muted mb-0">No forum posts yet.</p>
-                                    @endforelse
+                                    <ul class="list-group list-group-flush">
+                                        @forelse($user->forumPosts as $post)
+                                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                <span>
+                                                    <strong>{{ Str::limit($post->content, 50) }}</strong>
+                                                    <small class="text-muted">in {{ $post->thread?->title ?? 'Deleted thread' }}</small>
+                                                </span>
+                                                @if($post->thread)
+                                                    {{-- The resource route is forum.threads.show (plural),
+                                                         not forum.thread.show --}}
+                                                    <a href="{{ route('forum.threads.show', $post->thread) }}" class="btn btn-sm btn-outline-primary">View</a>
+                                                @endif
+                                            </li>
+                                        @empty
+                                            <p class="text-muted mb-0">No forum posts yet.</p>
+                                        @endforelse
+                                    </ul>
                                 </div>
                             </div>
                         </div>
@@ -167,43 +179,33 @@
                     </div>
                 </div>
 
-                {{-- Permissions --}}
+                {{-- Permissions: read-only per-user view. The old tab posted to a
+                     route that never existed (admin.user.update-permissions) —
+                     but this app authorizes by ROLE, so per-user permission
+                     sync would not affect any gate anyway. Role permissions are
+                     managed on the dedicated permissions page. --}}
                 @if(auth()->user()->can('manage-permissions') && $user->hasRole('admin'))
                     <div class="tab-pane fade" id="permissions" role="tabpanel">
                         <div class="card shadow-sm border-0 rounded-3">
                             <div class="card-body">
-                                <h6 class="fw-semibold text-dark mb-3">Manage Permissions</h6>
+                                <h6 class="fw-semibold text-dark mb-3">Roles & Their Permissions</h6>
 
-                                <form action="{{ route('admin.user.update-permissions', $user) }}" method="POST">
-                                    @csrf
-                                    @method('PUT')
-
-                                    <table class="table table-hover align-middle">
-                                        <thead>
-                                            <tr>
-                                                <th>Permission</th>
-                                                <th class="text-center">Assigned</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach($permissions as $permission)
-                                                <tr>
-                                                    <td>{{ ucfirst($permission->name) }}</td>
-                                                    <td class="text-center">
-                                                        <input type="checkbox" name="permissions[]" value="{{ $permission->id }}"
-                                                            {{ $user->permissions->contains($permission->id) ? 'checked' : '' }}>
-                                                    </td>
-                                                </tr>
-                                            @endforeach
-                                        </tbody>
-                                    </table>
-
-                                    <div class="d-flex justify-content-end mt-3">
-                                        <button type="submit" class="btn btn-primary">
-                                            <i class="bi bi-save me-1"></i> Update Permissions
-                                        </button>
+                                @foreach($user->roles as $role)
+                                    <div class="mb-3">
+                                        <span class="badge bg-primary mb-1">{{ ucfirst($role->name) }}</span>
+                                        <ul class="mb-0">
+                                            @forelse($role->permissions as $permission)
+                                                <li>{{ $permission->name }}</li>
+                                            @empty
+                                                <li class="text-muted">No permissions attached to this role.</li>
+                                            @endforelse
+                                        </ul>
                                     </div>
-                                </form>
+                                @endforeach
+
+                                <a href="{{ route('admin.permissions') }}" class="btn btn-outline-primary btn-sm mt-2">
+                                    <i class="bi bi-shield-lock me-1"></i> Manage Role Permissions
+                                </a>
                             </div>
                         </div>
                     </div>
@@ -212,18 +214,20 @@
             </div>
 
             {{-- Actions --}}
-            <div class="d-flex justify-content-end mt-4 gap-2">
-                <a href="{{ route('admin.user.edit', $user) }}" class="btn btn-warning">
-                    <i class="bi bi-pencil-square me-1"></i> Edit
-                </a>
-                <form action="{{ route('admin.user.delete', $user) }}" method="POST" onsubmit="return confirm('Delete this user?')">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" class="btn btn-danger">
-                        <i class="bi bi-trash me-1"></i> Delete
-                    </button>
-                </form>
-            </div>
+            @unless($user->trashed())
+                <div class="d-flex justify-content-end mt-4 gap-2">
+                    <a href="{{ route('admin.user.edit', $user) }}" class="btn btn-warning">
+                        <i class="bi bi-pencil-square me-1"></i> Edit
+                    </a>
+                    <form action="{{ route('admin.user.delete', $user) }}" method="POST" onsubmit="return confirm('Delete this user?')">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-trash me-1"></i> Delete
+                        </button>
+                    </form>
+                </div>
+            @endunless
 
         </div>
     </div>

@@ -23,7 +23,7 @@
                         @endif
                     </h3>
                     <p class="text-muted small">
-                        Started {{ $mentorship->start_date->format('M j, Y') }}
+                        Started {{ $mentorship->start_date?->format('M j, Y') }}
                         @if($mentorship->end_date)
                             • Ended {{ $mentorship->end_date->format('M j, Y') }}
                         @endif
@@ -88,7 +88,7 @@
             <!-- Mentorship Goal -->
             <div class="mb-4">
                 <h5 class="fw-semibold mb-2">Mentorship Goal</h5>
-                <p class="text-secondary" style="white-space: pre-line;">{{ $mentorship->goal }}</p>
+                <p class="text-secondary" style="white-space: pre-line;">{{ $mentorship->goal ?? "No goal specified" }}</p>
             </div>
 
             <!-- Update Status Form -->

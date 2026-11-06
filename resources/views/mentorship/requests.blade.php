@@ -61,7 +61,7 @@
                                             <p class="mb-2">{{ $request->message }}</p>
 
                                             @if($request->status === 'pending')
-                                                <form action="{{ route('mentorship.respond-request', $request) }}" method="POST">
+                                                <form action="{{ route('mentorship.respond-to-request', $request) }}" method="POST">
                                                     @csrf
                                                     <div class="mb-2">
                                                         <label for="response-message-{{ $request->id }}" class="form-label">Response Message (Optional)</label>
@@ -111,9 +111,15 @@
                                             <p class="text-muted mb-1"><strong>Goal:</strong> {{ $request->goal }}</p>
                                             <p class="mb-2">{{ $request->message }}</p>
 
-                                            @if($request->status === 'rejected' && $request->message)
+                                            @if($request->status === 'accepted' && $request->mentorship)
+                                                <a href="{{ route('mentorship.show', $request->mentorship) }}" class="btn btn-outline-primary btn-sm">
+                                                    View Mentorship
+                                                </a>
+                                            @endif
+
+                                            @if($request->status === 'rejected' && $request->response_message)
                                                 <div class="alert alert-light">
-                                                    <strong>Mentor's Response:</strong> {{ $request->message }}
+                                                    <strong>Mentor's Response:</strong> {{ $request->response_message }}
                                                 </div>
                                             @endif
                                         </div>

@@ -5,7 +5,7 @@
     <h2 class="fw-semibold text-primary mb-0">
         <i class="fa-solid fa-user-tie me-2"></i> {{ $mentor->name }} - Mentor Profile
     </h2>
-    <a href="{{ route('mentorship.find-mentors') }}" class="btn btn-sm btn-outline-secondary">
+    <a href="{{ route('mentorship.find') }}" class="btn btn-sm btn-outline-secondary">
         <i class="fa-solid fa-arrow-left me-1"></i> Back to Mentors
     </a>
 </div>

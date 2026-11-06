@@ -38,47 +38,19 @@
             </div>
         </div>
 
+        {{-- The partials render their own cards --}}
         <div class="row g-4">
-
-            {{-- Profile Information --}}
             <div class="col-12 col-lg-8 mx-auto">
-                <div class="card shadow-sm border-0">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0">Profile Information</h5>
-                    </div>
-                    <div class="card-body">
-                        @include('profile.partials.update-profile-information-form', [
-                            'education' => old('education', $user->profile->education ?? ''),
-                            'certifications' => old('certifications', implode(', ', $user->profile->certifications_array ?? []))
-                        ])
-                    </div>
-                </div>
+                @include('profile.partials.update-profile-information-form')
             </div>
 
-            {{-- Update Password --}}
             <div class="col-12 col-lg-8 mx-auto">
-                <div class="card shadow-sm border-0">
-                    <div class="card-header bg-warning text-dark">
-                        <h5 class="mb-0">Update Password</h5>
-                    </div>
-                    <div class="card-body">
-                        @include('profile.partials.update-password-form')
-                    </div>
-                </div>
+                @include('profile.partials.update-password-form')
             </div>
 
-            {{-- Delete Account --}}
             <div class="col-12 col-lg-8 mx-auto">
-                <div class="card shadow-sm border-0">
-                    <div class="card-header bg-danger text-white">
-                        <h5 class="mb-0">Delete Account</h5>
-                    </div>
-                    <div class="card-body">
-                        @include('profile.partials.delete-user-form')
-                    </div>
-                </div>
+                @include('profile.partials.delete-user-form')
             </div>
-
         </div>
     </div>
 @endsection

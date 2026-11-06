@@ -118,16 +118,28 @@
                             </div>
 
                             <!-- Skills -->
-                            <input id="skills" type="text" name="skills"
-                                value="{{ old('skills', implode(', ', $user->profile->skills_array)) }}"
-                                placeholder="e.g., PHP, JavaScript, Project Management"
-                                class="form-control @error('skills') is-invalid @enderror">
+                            <div class="mb-3">
+                                <label for="skills" class="form-label">Skills (comma separated)</label>
+                                <input id="skills" type="text" name="skills"
+                                       value="{{ old('skills', implode(', ', $user->profile->skills_array)) }}"
+                                       placeholder="e.g., PHP, JavaScript, Project Management"
+                                       class="form-control @error('skills') is-invalid @enderror">
+                                @error('skills')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
 
                             <!-- Interests -->
-                            <input id="interests" type="text" name="interests"
-                                value="{{ old('interests', implode(', ', $user->profile->interests_array)) }}"
-                                placeholder="e.g., Web Development, Data Science"
-                                class="form-control @error('interests') is-invalid @enderror">
+                            <div class="mb-3">
+                                <label for="interests" class="form-label">Professional Interests (comma separated)</label>
+                                <input id="interests" type="text" name="interests"
+                                       value="{{ old('interests', implode(', ', $user->profile->interests_array)) }}"
+                                       placeholder="e.g., Web Development, Data Science"
+                                       class="form-control @error('interests') is-invalid @enderror">
+                                @error('interests')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
 
                             <!-- Social Links -->
                             <div class="row g-3">

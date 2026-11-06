@@ -107,13 +107,13 @@
                         <!-- Required Skills -->
                         <div class="col-md-6">
                             <label for="skills_required" class="form-label fw-medium">Required Skills</label>
-                            <input type="text" class="form-control" id="skills_required" name="skills_required" value="{{ old('skills_required', $job->skills_required ? implode(', ', $job->skills_required) : '') }}" placeholder="PHP, Laravel, MySQL">
+                            <input type="text" class="form-control" id="skills_required" name="skills_required" value="{{ old('skills_required', $job->skills_required ? (is_array($job->skills_required) ? implode(', ', $job->skills_required) : $job->skills_required) : '') }}" placeholder="PHP, Laravel, MySQL">
                         </div>
 
                         <!-- Preferred Skills -->
                         <div class="col-md-6">
                             <label for="skills_preferred" class="form-label fw-medium">Preferred Skills</label>
-                            <input type="text" class="form-control" id="skills_preferred" name="skills_preferred" value="{{ old('skills_preferred', $job->skills_preferred ? implode(', ', $job->skills_preferred) : '') }}" placeholder="Vue.js, AWS, Docker">
+                            <input type="text" class="form-control" id="skills_preferred" name="skills_preferred" value="{{ old('skills_preferred', $job->skills_preferred ? (is_array($job->skills_preferred) ? implode(', ', $job->skills_preferred) : $job->skills_preferred) : '') }}" placeholder="Vue.js, AWS, Docker">
                         </div>
 
                         <!-- Job Description -->
