@@ -3,21 +3,27 @@
 namespace App\Providers;
 
 use App\Models\Event;
-use App\Models\JobPosting;
 use App\Models\JobApplication;
-use Illuminate\Support\Facades\Gate;
-use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
-use App\Policies\UserPolicy;
-use App\Policies\EventPolicy;
+use App\Models\JobPosting;
 use App\Models\User;
-use App\Policies\JobPostingPolicy;
-use App\Policies\ReportPolicy;
+use App\Policies\EventPolicy;
 use App\Policies\JobApplicationPolicy;
+use App\Policies\JobPostingPolicy;
+use App\Policies\UserPolicy;
+use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
+use Illuminate\Support\Facades\Gate;
 
 class AuthServiceProvider extends ServiceProvider
 {
     /**
      * The model to policy mappings for the application.
+     *
+     * NOTE: PHP array literals silently keep the LAST duplicate key. This
+     * array previously contained "User::class => UserPolicy::class"
+     * followed by "User::class => ReportPolicy::class", so every User
+     * policy check was silently routed to ReportPolicy. ReportPolicy is
+     * deliberately unmapped here — wire it to a real model in Phase 9
+     * if reports need one.
      *
      * @var array<class-string, class-string>
      */
@@ -26,7 +32,6 @@ class AuthServiceProvider extends ServiceProvider
         Event::class => EventPolicy::class,
         JobPosting::class => JobPostingPolicy::class,
         JobApplication::class => JobApplicationPolicy::class,
-        User::class => ReportPolicy::class,
     ];
 
     /**
@@ -36,7 +41,7 @@ class AuthServiceProvider extends ServiceProvider
     {
         $this->registerPolicies();
 
-        // Role-based gates (using closures for simplicity; reference policies if needed)
+        // Role-based gates
         Gate::define('access-admin-dashboard', function ($user) {
             return $user->hasRole('admin');
         });
@@ -93,7 +98,8 @@ class AuthServiceProvider extends ServiceProvider
         });
         Gate::define('create-mentorship', function ($user) {
             return $user->hasRole('alumni');
-        });Gate::define('view-mentorship', function ($user) {
+        });
+        Gate::define('view-mentorship', function ($user) {
             return true;
         });
     }

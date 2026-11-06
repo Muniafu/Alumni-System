@@ -25,10 +25,19 @@ class AppServiceProvider extends ServiceProvider
     {
         User::observe(UserObserver::class);
 
-        if (Schema::hasTable('roles')) { // <-- Only run if table exists
-            foreach (['admin', 'alumni', 'student'] as $roleName) {
-                Role::firstOrCreate(['name' => $roleName, 'guard_name' => 'web']);
+        // This block queries the DB on EVERY artisan command — including
+        // composer's package:discover — which crashed the whole toolchain
+        // while MySQL was down. Roles are already ensured by
+        // RolesAndPermissionsSeeder, so tolerate DB failures here.
+        try {
+            if (Schema::hasTable('roles')) {
+                foreach (['admin', 'alumni', 'student'] as $roleName) {
+                    Role::firstOrCreate(['name' => $roleName, 'guard_name' => 'web']);
+                }
             }
+        } catch (\Throwable $e) {
+            // DB unreachable (MySQL down, fresh install, composer scripts) —
+            // seeding creates the roles; never kill artisan/composer.
         }
     }
 }
