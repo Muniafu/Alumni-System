@@ -84,7 +84,7 @@ class ReportController extends Controller
 
         $filename = 'users-report-' . now()->format('Y-m-d');
 
-        return (new FastExcel($query))->download("{$filename}.{$format}");
+        return (new FastExcel($users))->download("{$filename}.{$format}");
     }
 
     protected function generateEventReport($format, $startDate, $endDate)

@@ -6,6 +6,7 @@ use App\Models\Event;
 use App\Models\User;
 use Illuminate\Http\Request;
 use App\Models\EventRsvp;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
@@ -20,12 +21,28 @@ class EventController extends Controller
     {
         // Eager load organizer and attendee counts to avoid N+1
         $events = Event::with('organizer')
-            ->withCount(['attendees as attendees_going_count' => fn($q) => $q->wherePivot('status', 'going')])
+            ->withCount(['attendees as attendees_going_count' => fn($q) => $q->where('event_rsvps.status', 'going')])
             ->upcoming()
             ->orderBy('start')
             ->paginate(10);
 
         return view('events.index', compact('events'));
+    }
+
+    /**
+     * Guest-safe public listing for /public/events.
+     * Upcoming events only; never exposes meeting_url, RSVP notes
+     * or attendee details to guests.
+     */
+    public function publicIndex()
+    {
+        $events = Event::query()
+            ->with('organizer:id,name')
+            ->upcoming()
+            ->orderBy('start')
+            ->paginate(10);
+
+        return view('events.public', compact('events'));
     }
 
     public function calendar()
@@ -179,29 +196,48 @@ class EventController extends Controller
             'notes'  => 'nullable|string|max:500',
         ]);
 
-        // Users already marked "going" may still update their RSVP
-        // (guests/notes) even if the event has filled up since.
-        $alreadyGoing = $event->rsvps()
-            ->where('user_id', auth()->id())
-            ->where('status', 'going')
-            ->exists();
+        // The capacity check and the write must happen atomically.
+        // Previously two concurrent "going" RSVPs could both pass
+        // isFull() and oversell the event. lockForUpdate() on the
+        // event row serializes competing RSVPs.
+        $result = DB::transaction(function () use ($event, $validated) {
+            $locked = Event::whereKey($event->getKey())->lockForUpdate()->firstOrFail();
 
-        if ($validated['status'] === 'going' && !$alreadyGoing && $event->isFull()) {
+            // Users already marked "going" may still update their RSVP
+            // (guests/notes) even if the event has filled up since.
+            $alreadyGoing = $locked->rsvps()
+                ->where('user_id', auth()->id())
+                ->where('status', 'going')
+                ->exists();
+
+            if ($validated['status'] === 'going' && !$alreadyGoing && $locked->isFull()) {
+                return ['full' => true];
+            }
+
+            try {
+                $rsvp = $locked->rsvps()->updateOrCreate(
+                    ['user_id' => auth()->id()],
+                    $validated
+                );
+            } catch (QueryException $e) {
+                // Double-submit race caught by the unique(event_id, user_id) index.
+                if (($e->errorInfo[1] ?? null) !== 1062) {
+                    throw $e;
+                }
+                return ['duplicate' => true];
+            }
+
+            return ['rsvp' => $rsvp];
+        });
+
+        if (isset($result['full'])) {
             return back()->withErrors(['status' => 'This event is full. You cannot RSVP as "Going".']);
         }
-
-        try {
-            $rsvp = $event->rsvps()->updateOrCreate(
-                ['user_id' => auth()->id()],
-                $validated
-            );
-        } catch (QueryException $e) {
-            // Double-submit race caught by the unique(event_id, user_id) index.
-            if (($e->errorInfo[1] ?? null) !== 1062) {
-                throw $e;
-            }
+        if (isset($result['duplicate'])) {
             return back()->withErrors(['status' => 'You have already RSVPed to this event.']);
         }
+
+        $rsvp = $result['rsvp'];
 
         // Notify organizer if not self
         if ($event->organizer && $event->organizer->id != auth()->id()) {

@@ -11,7 +11,8 @@ use Illuminate\Validation\Rules\Password;
 class PasswordController extends Controller
 {
     /**
-     * Update the user's password.
+     * Update the user's password. Matches the blade's "updatePassword"
+     * error bag and "password-updated" status key (Breeze convention).
      */
     public function update(Request $request): RedirectResponse
     {

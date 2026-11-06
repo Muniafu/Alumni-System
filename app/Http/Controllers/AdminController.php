@@ -154,6 +154,10 @@ class AdminController extends Controller
     */
     public function showUser(User $user)
     {
+        // Eager-load everything the tabs render (avoids N+1 queries and
+        // makes soft-deleted relations visible as null instead of crashing).
+        $user->load(['roles.permissions', 'profile', 'events', 'jobApplications.jobPosting', 'forumPosts.thread']);
+
         return view('admin.user-show', compact('user'));
     }
 
@@ -219,11 +223,30 @@ class AdminController extends Controller
     | User management
     |----------------------------------------------------------------------
     */
-    public function userManagement()
+    public function userManagement(Request $request)
     {
         Gate::authorize('manage-users');
 
-        $users = User::with('roles')->approved()->get();
+        // The search/role/status filter form previously did nothing —
+        // the query always returned approved users only, so the Pending
+        // and (invisible) Restore options were dead ends.
+        $users = User::with('roles')
+            ->when($request->filled('search'), function ($q) use ($request) {
+                $q->where(function ($q) use ($request) {
+                    $q->where('name', 'like', "%{$request->search}%")
+                        ->orWhere('email', 'like', "%{$request->search}%");
+                });
+            })
+            ->when($request->filled('role'), function ($q) use ($request) {
+                $q->whereHas('roles', fn ($qr) => $qr->where('roles.id', $request->role));
+            })
+            ->when($request->status === 'deleted', fn ($q) => $q->onlyTrashed())
+            ->when($request->status === 'pending', fn ($q) => $q->pendingApproval())
+            ->when(in_array($request->status, [null, '', 'approved']), fn ($q) => $q->approved())
+            ->orderBy('name')
+            ->paginate(20)
+            ->withQueryString();
+
         $roles = Role::all();
 
         return view('admin.user-management', compact('users', 'roles'));

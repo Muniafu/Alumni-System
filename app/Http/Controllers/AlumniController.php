@@ -150,31 +150,42 @@ class AlumniController extends Controller
 
     /**
      * Prepare profile data from the validated request.
+     *
+     * Null-safe: keys the form did not submit no longer raise
+     * "Undefined array key" (PHP 8 + Laravel turns that into a 500).
+     * Social links are only overwritten when actually submitted, so a
+     * partial form cannot wipe existing links.
      */
     protected function prepareProfileData(array $data): array
     {
-        return [
-            'phone' => $data['phone'],
-            'address' => $data['address'],
-            'current_job' => $data['current_job'],
-            'company' => $data['company'],
-            'bio' => $data['bio'],
-            'social_links' => [
-                'linkedin' => $data['linkedin'],
-                'twitter' => $data['twitter'],
-                'github' => $data['github'],
-                'website' => $data['website'],
-            ],
-            'skills' => isset($data['skills'])
+        $profileData = [
+            'phone' => $data['phone'] ?? null,
+            'address' => $data['address'] ?? null,
+            'current_job' => $data['current_job'] ?? null,
+            'company' => $data['company'] ?? null,
+            'bio' => $data['bio'] ?? null,
+            'education' => $data['education'] ?? null,
+            'skills' => !empty($data['skills'])
                 ? array_filter(array_map('trim', explode(',', $data['skills'])))
                 : [],
-            'interests' => isset($data['interests'])
+            'interests' => !empty($data['interests'])
                 ? array_filter(array_map('trim', explode(',', $data['interests'])))
                 : [],
-            'education' => $data['education'],
-            'certifications' => isset($data['certifications'])
+            'certifications' => !empty($data['certifications'])
                 ? array_filter(array_map('trim', explode(',', $data['certifications'])))
                 : [],
         ];
+
+        $social = [];
+        foreach (['linkedin', 'twitter', 'github', 'website'] as $key) {
+            if (array_key_exists($key, $data)) {
+                $social[$key] = $data[$key] ?: null;
+            }
+        }
+        if ($social) {
+            $profileData['social_links'] = array_filter($social);
+        }
+
+        return $profileData;
     }
 }

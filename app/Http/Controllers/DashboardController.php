@@ -2,20 +2,29 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Models\User;
 use App\Models\Event;
+use App\Models\EventRsvp;
 use App\Models\JobPosting;
+use App\Models\JobApplication;
 use App\Models\ForumThread;
-use App\Models\Activity; // if you create a dedicated activity log model
 
 class DashboardController extends Controller
 {
+    /**
+     * /dashboard — dispatch each user to the dashboard for their role.
+     */
     public function index()
     {
         $user = Auth::user();
+
+        // The route should sit behind auth middleware; this guard keeps a
+        // direct guest hit from being a fatal error.
+        if (!$user) {
+            return redirect()->route('login');
+        }
 
         if ($user->hasRole('admin')) {
             return redirect()->route('admin.dashboard');
@@ -25,69 +34,63 @@ class DashboardController extends Controller
             return redirect()->route('student.dashboard');
         }
 
-        return redirect()->route('login');
+        // Redirecting a role-less user to /login loops forever (the guest
+        // middleware bounces authenticated users straight back). Fail
+        // honestly instead.
+        abort(403, 'No role is assigned to this account. Contact an administrator.');
     }
 
     /**
-     * Admin Dashboard
+     * Admin Dashboard — same variable contract as before, but every query
+     * now targets columns/tables that actually exist: users.is_approved
+     * (not status), events.start/end (not date), event_rsvps (not
+     * event_user), the active() scope over application_deadline (not
+     * deadline), and approvals read from users.approved_at (there is no
+     * user_approvals or profile_updates table).
      */
     public function adminDashboard()
     {
-        // Example stats
         $userCounts = [
             'total' => User::count(),
             'admins' => User::role('admin')->count(),
             'alumni' => User::role('alumni')->count(),
             'students' => User::role('student')->count(),
-            'pending_approvals' => User::where('status', 'pending')->count(),
+            'pending_approvals' => User::where('is_approved', false)->count(),
             'new_last_week' => User::where('created_at', '>=', now()->subWeek())->count(),
         ];
 
         $eventStats = [
             'total' => Event::count(),
-            'upcoming' => Event::where('date', '>=', now())->count(),
-            'past' => Event::where('date', '<', now())->count(),
-            'rsvps' => DB::table('event_user')->count(), // ✅ FIXED
-            'avg_attendance' => DB::table('event_user')
-                ->selectRaw('COUNT(user_id)/COUNT(DISTINCT event_id) as avg')
-                ->value('avg') ?? 0,
+            'upcoming' => Event::where('start', '>=', now())->count(),
+            'past' => Event::where('end', '<', now())->count(),
+            'rsvps' => EventRsvp::count(),
+            'avg_attendance' => round(EventRsvp::count() / max(1, Event::count()), 1),
         ];
 
         $jobStats = [
             'total' => JobPosting::count(),
-            'active' => JobPosting::where('deadline', '>=', now())->count(),
-            'applications' => DB::table('job_applications')->count(), // ✅ FIXED
-            'avg_applications' => DB::table('job_applications')
-                ->selectRaw('COUNT(id)/COUNT(DISTINCT job_posting_id) as avg')
-                ->value('avg') ?? 0,
+            'active' => JobPosting::active()->count(),
+            'applications' => JobApplication::count(),
+            'avg_applications' => round(JobApplication::count() / max(1, JobPosting::count()), 1),
         ];
 
         $forumStats = [
             'threads' => ForumThread::count(),
-            'posts' => DB::table('forum_posts')->count(), // ✅ FIXED
+            'posts' => DB::table('forum_posts')->count(),
             'recent_posts' => DB::table('forum_posts')
                 ->where('created_at', '>=', now()->subWeek())
                 ->count(),
         ];
 
-        // Recent Activity (combine multiple models)
-        $recentEvents = Event::latest()->take(5)->get();
-        $recentJobs = JobPosting::latest()->take(5)->get();
-        $recentThreads = ForumThread::latest()->take(5)->get();
-        $recentUsers = User::latest()->take(5)->get();
-
-        // If you track approvals/profile updates in an Activity model
-        $recentApprovals = DB::table('user_approvals')->latest()->take(5)->get(); // ✅ FIXED
-        $recentProfiles = DB::table('profile_updates')->latest()->take(5)->get(); // ✅ FIXED
-
-        // Merge all into one collection and sort by created_at
+        // Recent activity — all Eloquent models, so the merged collection is
+        // uniform (the old version mixed in stdClass rows from two tables
+        // that don't even exist).
         $recentActivities = collect()
-            ->merge($recentEvents)
-            ->merge($recentJobs)
-            ->merge($recentThreads)
-            ->merge($recentUsers)
-            ->merge($recentApprovals)
-            ->merge($recentProfiles)
+            ->merge(Event::latest()->take(5)->get())
+            ->merge(JobPosting::latest()->take(5)->get())
+            ->merge(ForumThread::latest()->take(5)->get())
+            ->merge(User::latest()->take(5)->get())
+            ->merge(User::whereNotNull('approved_at')->latest('approved_at')->take(5)->get())
             ->sortByDesc('created_at')
             ->take(10);
 

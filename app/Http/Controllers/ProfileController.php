@@ -72,26 +72,31 @@ class ProfileController extends Controller
         $user = $request->user();
         $data = $request->validated();
 
-        // Convert comma-separated inputs to array for mutators
-        $data['skills'] = isset($data['skills']) ? array_map('trim', explode(',', $data['skills'])) : [];
-        $data['interests'] = isset($data['interests']) ? array_map('trim', explode(',', $data['interests'])) : [];
-        $data['certifications'] = isset($data['certifications']) ? array_map('trim', explode(',', $data['certifications'])) : [];
+        // Normalize comma-separated inputs into arrays for the mutators
+        foreach (['skills', 'interests', 'certifications'] as $field) {
+            $data[$field] = isset($data[$field]) && $data[$field] !== ''
+                ? array_map('trim', explode(',', $data[$field]))
+                : [];
+        }
 
-        // Social links array
-        $socialLinks = [
-            $data['linkedin'] ?? null,
-            $data['twitter'] ?? null,
-            $data['github'] ?? null,
-            $data['website'] ?? null,
-        ];
-        $data['social_links'] = array_filter($socialLinks);
-
+        // Named social link keys — Profile::getSocialLink() looks links up
+        // by name, so numeric keys would never match. (The old code built
+        // a numerically-keyed array, so social links were never readable.)
+        $data['social_links'] = array_filter([
+            'linkedin' => $data['linkedin'] ?? null,
+            'twitter' => $data['twitter'] ?? null,
+            'github' => $data['github'] ?? null,
+            'website' => $data['website'] ?? null,
+        ]);
         unset($data['linkedin'], $data['twitter'], $data['github'], $data['website']);
 
         $profile = $user->profile()->firstOrCreate([]);
-        $profile->fill($data)->save();
+        $profile->fill($data);
 
-        $profile->calculateCompletion();
+        // Sets the completion % on the instance (and fires the one-time
+        // 100% notification); persisted by the single save below.
+        $profile->calculateCompletion(false);
+        $profile->save();
 
         return redirect()->route('profile.edit')->with('status', 'profile-details-updated');
     }

@@ -11,27 +11,14 @@ use Illuminate\Support\Facades\Notification;
 class MessageController extends Controller
 {
     /**
-     * Display a listing of the resource.
-     */
-    public function index()
-    {
-        //
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
+     * Send a message in a conversation (participants only — policy enforced).
+     *
+     * authorize('view', ...) is the participants-only check: the
+     * ConversationPolicy only allows actual participants, so no
+     * non-participant can ever post or see a conversation.
      */
     public function store(Request $request, Conversation $conversation)
     {
-
         $this->authorize('view', $conversation);
 
         $request->validate([
@@ -52,39 +39,13 @@ class MessageController extends Controller
 
         return redirect()->route('conversations.show', $conversation)
             ->with('success', 'Message sent successfully');
-
     }
 
     /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
+     * Delete a message (author only — policy enforced).
      */
     public function destroy(Message $message)
     {
-
         $this->authorize('delete', $message);
 
         $conversation = $message->conversation;
@@ -92,7 +53,5 @@ class MessageController extends Controller
 
         return redirect()->route('conversations.show', $conversation)
             ->with('success', 'Message deleted successfully');
-
     }
-    
 }
