@@ -1,67 +1,168 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Alumni & Student Management Platform
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A full-featured alumni engagement platform for the Muniafu community: approval-based registration, job boards, events with RSVPs, a moderated forum, structured mentorship, and an admin console with reporting — built on Laravel 10.
 
-## About Laravel
+## Tech Stack
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+| Layer | Technology |
+|---|---|
+| Framework | Laravel 10.49 (PHP 8.1+) |
+| Auth scaffolding | Laravel Breeze (Blade) with a custom approval pipeline |
+| Authorization | spatie/laravel-permission 6.21 (role-based, single-source-of-truth matrix) |
+| Database | MySQL |
+| Frontend | Blade + Bootstrap 5 |
+| Queues | Database-backed queue (`QUEUE_CONNECTION=database`) |
+| Exports | rap2hpoutre/fast-excel (CSV/Excel reports) |
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Features
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### Auth & Approval Pipeline
+- Registration with automatic role assignment (alumni vs student by graduation year).
+- **First registered user becomes the bootstrap admin** and is auto-approved.
+- Every other user registers into a *pending approval* state — they see a clean pending page, never a broken one.
+- Admins approve or reject applicants (individually or in bulk); approval/rejection notifications are queued and delivered by email **and** in-app.
+- Soft-deleted accounts with restore support.
 
-## Learning Laravel
+### Roles & Permissions
+- Three roles: `admin`, `alumni`, `student` (plus the pending state).
+- Permission names are hyphenated and match every `Gate::authorize()` / `@can` call exactly — the matrix lives in `RolesAndPermissionsSeeder::MATRIX` and is the single source of truth. Re-seeding converges to exactly that matrix and removes stale permissions.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### Jobs
+- Alumni and admins post jobs and internships (remote flag, contact email, skills, application deadline).
+- Students and alumni apply once (unique constraint per posting + user).
+- Resume uploads stored on a private disk.
+- `active()` scope: only postings with a future deadline count as active.
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+### Events
+- Public event listings for guests; capacity-limited RSVPs (one per user, enforced in the DB).
+- Online events keep their meeting URL visible to attendees only.
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### Forum
+- Categories, threads, and replies with pinned and locked threads.
+- Author-only editing (admins moderate everything), auto-subscribe on reply, subscribe/unsubscribe.
+- Soft deletes: removing a thread's last post removes the thread.
 
-## Laravel Sponsors
+### Mentorship
+- Alumni sign up as mentors via mentor profiles (expertise + bio) — only signed-up mentors appear in "Find Mentors".
+- Students send mentorship requests; mentors accept or reject. Rejection preserves the original message and allows re-requesting.
+- Accepted requests become linked mentorships with goal, start date, and end date. Status changes notify both parties exactly once.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### Profiles
+- Editable profile details: education, certifications, skills, interests, and named social links (LinkedIn, GitHub, Twitter, etc.).
+- Password changes and account deletion (soft delete, password-confirmed).
 
-### Premium Partners
+### Admin Console
+- Dashboard with aggregate stats (users, active jobs, average applications, average attendance).
+- Pending approvals with individual and bulk approve/reject.
+- User management with search, role/status filters (including a deleted-users view with restore), pagination, create/edit users.
+- Per-user detail view: roles, profile, academic info, and activity (events, job applications, forum posts) with eager loading.
+- CSV/Excel exports of users and other reports.
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+## Getting Started
 
-## Contributing
+### Requirements
+- PHP 8.1+ with required Laravel extensions
+- Composer
+- Node.js & npm
+- MySQL
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### Installation
 
-## Code of Conduct
+```bash
+git clone https://github.com/Muniafu/Alumni-System.git
+cd Alumni-System
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+composer install
+npm install && npm run build
 
-## Security Vulnerabilities
+cp .env.example .env
+php artisan key:generate
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Configure the database in `.env`:
+
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=alumni_system
+DB_USERNAME=laravel
+DB_PASSWORD=secret
+
+QUEUE_CONNECTION=database   # required — notifications are queued
+MAIL_MAILER=log             # local testing; use a real SMTP provider in production
+```
+
+Create the database, then migrate and seed:
+
+```bash
+mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS alumni_system CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+php artisan migrate:fresh --seed
+php artisan permission:cache-reset
+php artisan storage:link
+```
+
+Run the app (two terminals):
+
+```bash
+php artisan serve       # terminal 1 — http://127.0.0.1:8000
+php artisan queue:work  # terminal 2 — REQUIRED for queued email notifications
+```
+
+### Demo Accounts
+
+All seeded accounts use the password `password`.
+
+| Email | Role | State |
+|---|---|---|
+| `admin@alumni.edu` | admin | approved |
+| `alumni@alumni.edu` | alumni | approved |
+| `student@alumni.edu` | student | approved |
+| `pending@alumni.edu` | student | **pending** — approve her from the admin panel to demo the pipeline |
+
+Seed data also includes events (with RSVPs), job postings with deadlines, forum threads, and an active mentorship with a mentor profile, so every dashboard and admin view has real content.
+
+## Testing
+
+The suite (45 tests) covers the auth/approval pipeline, the permission matrix, profiles, and the forum module:
+
+```bash
+php artisan test
+```
+
+Tests run against a separate `alumni_system_test` database. Grant the test user access once:
+
+```bash
+mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS alumni_system_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+GRANT ALL PRIVILEGES ON alumni_system_test.* TO 'laravel'@'localhost';
+GRANT ALL PRIVILEGES ON alumni_system_test.* TO 'laravel'@'127.0.0.1';
+FLUSH PRIVILEGES;"
+```
+
+## Project Structure
+
+```
+app/
+├── Console/            # Commands
+├── Http/
+│   ├── Controllers/    # Per-module controllers (Admin, Auth, Forum, ...)
+│   └── Middleware/     # Approved + role middleware
+├── Models/              # User, Profile, Event, JobPosting, ForumThread, Mentorship, ...
+├── Notifications/      # Queued (mail + database channel)
+└── Policies/           # Per-model authorization
+database/
+├── migrations/
+└── seeders/            # RolesAndPermissionsSeeder (the MATRIX) + demo data
+resources/views/         # Blade templates (Bootstrap 5)
+routes/web.php
+```
+
+## Notes
+
+- **Queue worker:** approval/rejection and other notifications are queued — run `php artisan queue:work` (Supervisor in production).
+- **Caches:** after permission changes run `php artisan permission:cache-reset`.
+- **Laravel 10** is past upstream end-of-life; an upgrade to 11/12 is planned post-deployment.
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
-# Alumni-2
+This project is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
