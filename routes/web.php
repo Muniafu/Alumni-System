@@ -124,10 +124,20 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     |-----------------------------
     */
     Route::prefix('forum')->name('forum.')->group(function () {
-        Route::get('/', [ForumThreadController::class, 'index'])->name('index');
+        // Forum home = category listing (ForumThreadController::index was
+        // an empty stub, removed during the Phase 5 cleanup)
+        Route::get('/', [ForumCategoryController::class, 'index'])->name('index');
+
         Route::get('/categories', [ForumCategoryController::class, 'index'])->name('categories.index');
         Route::get('/categories/{category}', [ForumCategoryController::class, 'show'])->name('categories.show');
-        Route::resource('threads', ForumThreadController::class)->except(['index']);
+
+        // Thread create/store are nested under {category}: implicit binding
+        // must inject a real ForumCategory, otherwise the thread insert
+        // crashes with a NULL forum_category_id
+        Route::get('/categories/{category}/threads/create', [ForumThreadController::class, 'create'])->name('threads.create');
+        Route::post('/categories/{category}/threads', [ForumThreadController::class, 'store'])->name('threads.store');
+
+        Route::resource('threads', ForumThreadController::class)->except(['index', 'create', 'store']);
         Route::post('/threads/{thread}/posts', [ForumPostController::class, 'store'])->name('posts.store');
         Route::resource('posts', ForumPostController::class)->only(['edit', 'update', 'destroy']);
         Route::post('/threads/{thread}/subscribe', [ForumThreadController::class, 'subscribe'])->name('threads.subscribe');
@@ -163,11 +173,16 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     Route::prefix('mentorship')->name('mentorship.')->group(function () {
         Route::get('/', [MentorshipController::class, 'index'])->name('index');
         Route::get('/find', [MentorshipController::class, 'findMentors'])->name('find');
-        Route::get('/mentor/{mentor}', [MentorshipController::class, 'showMentor'])->name('show-mentor');
-        Route::get('/{mentorship}', [MentorshipController::class, 'show'])->name('show');
-        Route::post('/request/{mentor}', [MentorshipController::class, 'sendRequest'])->name('send-request');
+
+        // Static segments MUST be registered BEFORE GET /{mentorship},
+        // otherwise "requests" is treated as the {mentorship} binding -> 404
         Route::get('/requests', [MentorshipController::class, 'myRequests'])->name('requests');
         Route::post('/requests/{mentorshipRequest}/respond', [MentorshipController::class, 'respondToRequest'])->name('respond-to-request');
+
+        Route::get('/mentor/{mentor}', [MentorshipController::class, 'showMentor'])->name('show-mentor');
+        Route::post('/request/{mentor}', [MentorshipController::class, 'sendRequest'])->name('send-request');
+
+        Route::get('/{mentorship}', [MentorshipController::class, 'show'])->name('show');
         Route::put('/{mentorship}', [MentorshipController::class, 'update'])->name('update');
     });
 
