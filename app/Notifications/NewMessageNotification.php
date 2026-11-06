@@ -4,7 +4,6 @@ namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Notification;
 use App\Models\Message;
 use Illuminate\Support\Str;
@@ -20,9 +19,14 @@ class NewMessageNotification extends Notification implements ShouldQueue
         $this->message = $message;
     }
 
+    /**
+     * Database-only for now. The broadcast channel was dropped until a
+     * websockets driver (Pusher/Reverb) is actually enabled — BROADCAST_DRIVER
+     * is null/log, so broadcasting went nowhere and only added noise.
+     */
     public function via($notifiable)
     {
-        return ['database', 'broadcast'];
+        return ['database'];
     }
 
     public function toArray($notifiable)
@@ -36,10 +40,5 @@ class NewMessageNotification extends Notification implements ShouldQueue
             'url' => route('conversations.show', $this->message->conversation_id),
             'type' => 'new_message'
         ];
-    }
-
-    public function toBroadcast($notifiable)
-    {
-        return new BroadcastMessage($this->toArray($notifiable));
     }
 }
