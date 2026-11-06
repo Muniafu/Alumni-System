@@ -86,6 +86,11 @@ class Profile extends Model
         $this->attributes['certifications'] = is_array($value) ? implode(',', $value) : (string) $value;
     }
 
+    public function getSocialLinksArrayAttribute(): array
+    {
+        return array_values(array_filter($this->social_links ?? []));
+    }
+
     /*
     |--------------------------------------------------------------------------
     | Social links (JSON object via cast)

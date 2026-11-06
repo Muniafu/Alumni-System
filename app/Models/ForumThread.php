@@ -58,7 +58,7 @@ class ForumThread extends Model
     // Relationships
     public function subscribers()
     {
-        return $this->belongsToMany(User::class, 'forum_thread_subscriptions');
+        return $this->belongsToMany(User::class, 'forum_thread_subscriptions')->withTimestamps();
     }
 
     // Methods

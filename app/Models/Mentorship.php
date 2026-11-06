@@ -14,12 +14,18 @@ class Mentorship extends Model
     protected $fillable = [
         'mentor_id',
         'mentee_id',
+        'mentorship_request_id',
         'status',
+        'goal',
         'notes',
+        'start_date',
+        'end_date',
     ];
 
     protected $casts = [
         'status' => 'string',
+        'start_date' => 'datetime',
+        'end_date' => 'datetime',
     ];
 
     public function mentor()
@@ -32,22 +38,26 @@ class Mentorship extends Model
         return $this->belongsTo(User::class, 'mentee_id');
     }
 
+    public function request()
+    {
+        return $this->belongsTo(MentorshipRequest::class, 'mentorship_request_id');
+    }
+
+    /**
+     * Single source of truth for status-change notifications:
+     * mentor, mentee and admins are each notified exactly once, here.
+     * (The controller no longer sends duplicate notifications.)
+     */
     protected static function booted()
     {
         static::updated(function ($mentorship) {
-            if ($mentorship->isDirty('status')) {
-                $oldStatus = $mentorship->getOriginal('status');
+            if ($mentorship->wasChanged('status')) {
                 $newStatus = $mentorship->status;
-                if ($oldStatus !== $newStatus) {
-                    $mentor = $mentorship->mentor;
-                    $mentee = $mentorship->mentee;
-                    $admins = User::role('admin')->get();
-                    Notification::send($mentor, new MentorshipStatusChangedNotification($mentorship, $newStatus));
-                    Notification::send($mentee, new MentorshipStatusChangedNotification($mentorship, $newStatus));
-                    Notification::send($admins, new MentorshipStatusChangedNotification($mentorship, $newStatus));
-                }
+
+                Notification::send($mentorship->mentor, new MentorshipStatusChangedNotification($mentorship, $newStatus));
+                Notification::send($mentorship->mentee, new MentorshipStatusChangedNotification($mentorship, $newStatus));
+                Notification::send(User::role('admin')->get(), new MentorshipStatusChangedNotification($mentorship, $newStatus));
             }
         });
     }
-
 }

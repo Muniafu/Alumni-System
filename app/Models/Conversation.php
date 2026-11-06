@@ -43,17 +43,33 @@ class Conversation extends Model
         });
     }
 
+    /**
+     * Other participants: everyone except the current user.
+     * Reads the (eager-loaded) users collection.
+     */
     public function getOtherUsersAttribute()
     {
         return $this->users->where('id', '!=', auth()->id());
     }
 
+    /**
+     * Whether the current user has unread messages in this conversation.
+     * Null-guarded: never crashes if the pivot row is somehow missing.
+     */
     public function getIsUnreadAttribute()
     {
-        $lastRead = $this->users->find(auth()->id())->pivot->last_read_at;
-        return $lastRead
-            ? $this->latestMessage && $this->latestMessage->created_at > $lastRead
-            : (bool) $this->latestMessage;
-    }
+        $participant = $this->users->find(auth()->id());
 
+        if (! $participant) {
+            return false;
+        }
+
+        $lastRead = $participant->pivot->last_read_at;
+
+        if ($lastRead) {
+            return (bool) ($this->latestMessage && $this->latestMessage->created_at->gt($lastRead));
+        }
+
+        return (bool) $this->latestMessage;
+    }
 }

@@ -13,6 +13,7 @@ class MentorshipRequest extends Model
         'mentor_id',
         'mentee_id',
         'message',
+        'response_message',
         'goal',
         'status',
     ];
@@ -25,6 +26,16 @@ class MentorshipRequest extends Model
     public function mentee()
     {
         return $this->belongsTo(User::class, 'mentee_id');
+    }
+
+    /**
+     * The Mentorship created when this request is accepted.
+     * (Blades already referenced $request->mentorship — the relation
+     * simply never existed.)
+     */
+    public function mentorship()
+    {
+        return $this->hasOne(Mentorship::class, 'mentorship_request_id');
     }
 
     public function scopePending($query)
@@ -41,5 +52,4 @@ class MentorshipRequest extends Model
     {
         return $query->where('mentee_id', $userId);
     }
-
 }

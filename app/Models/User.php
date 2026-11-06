@@ -56,6 +56,17 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasOne(Profile::class);
     }
 
+    /**
+     * Fallback avatar URL. Blades reference $user->profile_photo_url
+     * (e.g. the event attendee list) but no such attribute existed,
+     * rendering broken images. Swap for real photo storage later.
+     */
+    public function getProfilePhotoUrlAttribute(): string
+    {
+        return 'https://ui-avatars.com/api/?name=' . urlencode($this->name)
+            . '&color=fff&background=0d6efd&size=128&bold=true';
+    }
+
     public function forumThreads()
     {
         return $this->hasMany(ForumThread::class, 'user_id');
@@ -163,5 +174,10 @@ class User extends Authenticatable implements MustVerifyEmail
     public function unreadNotificationsCount(): int
     {
         return $this->unreadNotifications()->count();
+    }
+
+        public function mentorProfile()
+    {
+        return $this->hasOne(MentorProfile::class);
     }
 }
