@@ -1,0 +1,117 @@
+
+  GET|HEAD        / ........................................................................................... 
+  POST            admin/approve-user/{user} .................. admin.approve-user › AdminController@approveUser
+  POST            admin/bulk-approval ................ admin.users.bulk-approval › AdminController@bulkApproval
+  GET|HEAD        admin/dashboard ................................. admin.dashboard › AdminController@dashboard
+  GET|HEAD        admin/pending-approvals .......... admin.pending-approvals › AdminController@pendingApprovals
+  GET|HEAD        admin/permissions ........................... admin.permissions › AdminController@permissions
+  POST            admin/permissions/update ....... admin.permissions.update › AdminController@updatePermissions
+  GET|HEAD        admin/permissions/{role} ......... admin.permissions.get › AdminController@getRolePermissions
+  POST            admin/reject-user/{user} ..................... admin.reject-user › AdminController@rejectUser
+  GET|HEAD        admin/reports .................................. admin.reports.index › ReportController@index
+  POST            admin/reports/generate ................... admin.reports.generate › ReportController@generate
+  GET|HEAD        admin/user-management ................ admin.user-management › AdminController@userManagement
+  GET|HEAD        admin/user/create ............................ admin.user.create › AdminController@createUser
+  POST            admin/user/store ............................... admin.user.store › AdminController@storeUser
+  POST            admin/user/{id}/restore .................... admin.user.restore › AdminController@restoreUser
+  GET|HEAD        admin/user/{user} ................................ admin.user.show › AdminController@showUser
+  DELETE          admin/user/{user}/delete ..................... admin.user.delete › AdminController@deleteUser
+  GET|HEAD        admin/user/{user}/edit ........................... admin.user.edit › AdminController@editUser
+  PUT             admin/user/{user}/update ..................... admin.user.update › AdminController@updateUser
+  POST            admin/users/bulk-action ................ admin.users.bulk-action › AdminController@bulkAction
+  GET|HEAD        alumni/dashboard .............................. alumni.dashboard › AlumniController@dashboard
+  GET|HEAD        alumni/profile ................................ alumni.profile › AlumniController@editProfile
+  POST            alumni/profile/update ................ alumni.profile.update › AlumniController@updateProfile
+  GET|HEAD        api/user .................................................................................... 
+  GET|HEAD        applications/{application} ......... applications.show › JobPostingController@showApplication
+  GET|HEAD        applications/{application}/resume applications.resume.download › JobPostingController@downlo…
+  GET|HEAD        confirm-password ................. password.confirm › Auth\ConfirmablePasswordController@show
+  POST            confirm-password ................................... Auth\ConfirmablePasswordController@store
+  GET|HEAD        conversations ............................ conversations.index › ConversationController@index
+  POST            conversations ............................ conversations.store › ConversationController@store
+  GET|HEAD        conversations/create ................... conversations.create › ConversationController@create
+  GET|HEAD        conversations/{conversation} ............... conversations.show › ConversationController@show
+  DELETE          conversations/{conversation} ......... conversations.destroy › ConversationController@destroy
+  POST            conversations/{conversation}/messages conversations.messages.store › MessageController@store
+  DELETE          conversations/{conversation}/messages/{message} conversations.messages.destroy › MessageCont…
+  GET|HEAD        dashboard ............................................. dashboard › DashboardController@index
+  GET|HEAD        directory ...................................... directory.index › UserSearchController@index
+  GET|HEAD        directory/{user} ................................. directory.show › UserSearchController@show
+  POST            email/verification-notification verification.send › Auth\EmailVerificationNotificationContro…
+  GET|HEAD        events ................................................. events.index › EventController@index
+  POST            events ................................................. events.store › EventController@store
+  GET|HEAD        events/calendar .................................. events.calendar › EventController@calendar
+  GET|HEAD        events/calendar/data ............... events.calendar.data › EventController@getCalendarEvents
+  GET|HEAD        events/create ........................................ events.create › EventController@create
+  PUT|PATCH       events/{event} ....................................... events.update › EventController@update
+  DELETE          events/{event} ..................................... events.destroy › EventController@destroy
+  GET|HEAD        events/{event} ........................................... events.show › EventController@show
+  GET|HEAD        events/{event}/edit ...................................... events.edit › EventController@edit
+  POST            events/{event}/rsvp ...................................... events.rsvp › EventController@rsvp
+  DELETE          events/{event}/rsvp ......................... events.rsvp.cancel › EventController@cancelRsvp
+  GET|HEAD        forgot-password .................. password.request › Auth\PasswordResetLinkController@create
+  POST            forgot-password ..................... password.email › Auth\PasswordResetLinkController@store
+  GET|HEAD        forum ........................................... forum.index › ForumCategoryController@index
+  GET|HEAD        forum/categories ..................... forum.categories.index › ForumCategoryController@index
+  GET|HEAD        forum/categories/{category} ............ forum.categories.show › ForumCategoryController@show
+  POST            forum/categories/{category}/threads ....... forum.threads.store › ForumThreadController@store
+  GET|HEAD        forum/categories/{category}/threads/create forum.threads.create › ForumThreadController@crea…
+  PUT|PATCH       forum/posts/{post} .......................... forum.posts.update › ForumPostController@update
+  DELETE          forum/posts/{post} ........................ forum.posts.destroy › ForumPostController@destroy
+  GET|HEAD        forum/posts/{post}/edit ......................... forum.posts.edit › ForumPostController@edit
+  GET|HEAD        forum/threads/{thread} ...................... forum.threads.show › ForumThreadController@show
+  PUT|PATCH       forum/threads/{thread} .................. forum.threads.update › ForumThreadController@update
+  DELETE          forum/threads/{thread} ................ forum.threads.destroy › ForumThreadController@destroy
+  GET|HEAD        forum/threads/{thread}/edit ................. forum.threads.edit › ForumThreadController@edit
+  POST            forum/threads/{thread}/posts .................. forum.posts.store › ForumPostController@store
+  POST            forum/threads/{thread}/subscribe .. forum.threads.subscribe › ForumThreadController@subscribe
+  POST            forum/threads/{thread}/unsubscribe forum.threads.unsubscribe › ForumThreadController@unsubsc…
+  POST            jobs ................................................ jobs.store › JobPostingController@store
+  GET|HEAD        jobs ................................................ jobs.index › JobPostingController@index
+  GET|HEAD        jobs/create ....................................... jobs.create › JobPostingController@create
+  GET|HEAD        jobs/my-postings ......................... jobs.my-postings › JobPostingController@myPostings
+  GET|HEAD        jobs/{application}/download-resume jobs.downloadResume › JobPostingController@downloadResume
+  PUT|PATCH       jobs/{job} ........................................ jobs.update › JobPostingController@update
+  DELETE          jobs/{job} ...................................... jobs.destroy › JobPostingController@destroy
+  GET|HEAD        jobs/{job} ............................................ jobs.show › JobPostingController@show
+  GET|HEAD        jobs/{job}/applications ............... jobs.applications › JobPostingController@applications
+  PUT             jobs/{job}/applications/{application} jobs.applications.update › JobPostingController@update…
+  POST            jobs/{job}/apply .................................... jobs.apply › JobPostingController@apply
+  GET|HEAD        jobs/{job}/edit ....................................... jobs.edit › JobPostingController@edit
+  GET|HEAD        login .................................... login › Auth\AuthenticatedSessionController@create
+  POST            login ............................................. Auth\AuthenticatedSessionController@store
+  POST            logout ................................. logout › Auth\AuthenticatedSessionController@destroy
+  POST            mentorship .................................... mentorship.store › MentorshipController@store
+  GET|HEAD        mentorship .................................... mentorship.index › MentorshipController@index
+  GET|HEAD        mentorship/create ........................... mentorship.create › MentorshipController@create
+  GET|HEAD        mentorship/find .......................... mentorship.find › MentorshipController@findMentors
+  GET|HEAD        mentorship/mentor/{mentor} ......... mentorship.show-mentor › MentorshipController@showMentor
+  POST            mentorship/request/{mentor} ...... mentorship.send-request › MentorshipController@sendRequest
+  GET|HEAD        mentorship/requests ................... mentorship.requests › MentorshipController@myRequests
+  POST            mentorship/requests/{mentorshipRequest}/respond mentorship.respond-to-request › MentorshipCo…
+  GET|HEAD        mentorship/{mentorship} ......................... mentorship.show › MentorshipController@show
+  PUT             mentorship/{mentorship} ..................... mentorship.update › MentorshipController@update
+  GET|HEAD        notifications .............................. notifications.all › NotificationController@index
+  POST            notifications/mark-all-read notifications.markAllAsRead › NotificationController@markAllAsRe…
+  POST            notifications/mark-as-read/{id} notifications.markAsRead › NotificationController@markAsRead
+  PUT             password ................................... password.update › Auth\PasswordController@update
+  GET|HEAD        pending-approval .............................. pending-approval › ApprovalController@pending
+  GET|HEAD        profile ............................................... profile.show › ProfileController@show
+  PATCH           profile ........................................... profile.update › ProfileController@update
+  DELETE          profile ......................................... profile.destroy › ProfileController@destroy
+  PUT             profile/details .................... profile.details.update › ProfileController@updateDetails
+  GET|HEAD        profile/edit .......................................... profile.edit › ProfileController@edit
+  GET|HEAD        public/directory ........................ public.directory › UserSearchController@publicIndex
+  GET|HEAD        public/events ................................... public.events › EventController@publicIndex
+  GET|HEAD        register .................................... register › Auth\RegisteredUserController@create
+  POST            register ................................................ Auth\RegisteredUserController@store
+  POST            reset-password ............................ password.store › Auth\NewPasswordController@store
+  GET|HEAD        reset-password/{token} ................... password.reset › Auth\NewPasswordController@create
+  GET|HEAD        student/dashboard ........................... student.dashboard › StudentController@dashboard
+  GET|HEAD        student/profile ............................. student.profile › StudentController@editProfile
+  POST            student/profile/update ............. student.profile.update › StudentController@updateProfile
+  GET|HEAD        verify-email ................... verification.notice › Auth\EmailVerificationPromptController
+  GET|HEAD        verify-email/{id}/{hash} ................... verification.verify › Auth\VerifyEmailController
+
+                                                                                           Showing [113] routes
+
