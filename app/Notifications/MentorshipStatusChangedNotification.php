@@ -45,7 +45,7 @@ class MentorshipStatusChangedNotification extends Notification implements Should
                 'request_id' => $this->model->id,
                 'status' => $this->status,
                 'message' => "Your mentorship request to {$this->model->mentor->name} was {$this->status}.",
-                'url' => route('mentorship.requests.sent'),
+                'url' => route('mentorship.requests'),
                 'type' => 'mentorship_request_status_changed'
             ];
         }
@@ -65,7 +65,7 @@ class MentorshipStatusChangedNotification extends Notification implements Should
             return [
                 'mentorship_id' => $this->model->id,
                 'status' => $this->status,
-                'message' => $message,
+                'message' => "Mentorship status changed: {$this->status}",
                 'url' => route('mentorship.show', $this->model),
                 'type' => 'mentorship_status_changed'
             ];

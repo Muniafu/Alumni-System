@@ -26,15 +26,16 @@ class NewForumPostNotification extends Notification implements ShouldQueue
 
     public function toArray($notifiable)
     {
+        $thread = $this->post->thread;
+
         return [
             'post_id' => $this->post->id,
-            'thread_id' => $this->post->thread_id,
+            'thread_id' => $thread->id,
             'author_name' => $this->post->author->name,
-            'message' => "New reply in thread: {$this->post->thread->title}",
-            'url' => route('forum.threads.show', [
-                'thread' => $this->post->thread,
-                'page' => $this->post->thread->posts()->paginate(15)->lastPage()
-            ]) . '#post-' . $this->post->id,
+            'message' => "New reply in thread: {$thread->title}",
+            // Deep-linking to the exact page cost a paginated COUNT query
+            // per recipient - the thread anchor is enough.
+            'url' => route('forum.threads.show', $thread) . '#post-' . $this->post->id,
             'type' => 'new_forum_post'
         ];
     }
