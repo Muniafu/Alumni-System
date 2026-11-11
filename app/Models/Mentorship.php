@@ -54,9 +54,16 @@ class Mentorship extends Model
             if ($mentorship->wasChanged('status')) {
                 $newStatus = $mentorship->status;
 
-                Notification::send($mentorship->mentor, new MentorshipStatusChangedNotification($mentorship, $newStatus));
-                Notification::send($mentorship->mentee, new MentorshipStatusChangedNotification($mentorship, $newStatus));
-                Notification::send(User::role('admin')->get(), new MentorshipStatusChangedNotification($mentorship, $newStatus));
+                // Null-safe: a soft-deleted mentor or mentee must not
+                // crash the status update for the surviving member.
+                $recipients = collect([$mentorship->mentor, $mentorship->mentee])
+                    ->filter()
+                    ->merge(User::role('admin')->get());
+
+                Notification::send(
+                    $recipients->unique('id')->values(),
+                    new MentorshipStatusChangedNotification($mentorship, $newStatus)
+                );
             }
         });
     }

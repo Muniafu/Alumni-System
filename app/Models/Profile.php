@@ -143,7 +143,7 @@ class Profile extends Model
         $arrayFields   = ['skills', 'interests', 'social_links', 'certifications'];
 
         foreach ($userFields as $field) {
-            if (!empty($this->user->{$field})) {
+            if (!empty($this->user?->{$field})) {
                 $completedFields++;
             }
         }
