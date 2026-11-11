@@ -1,0 +1,237 @@
+:root, [data-bs-theme=light] {
+    /* Brand */
+    --brand:         #0F766E;   /* teal-700 — buttons, links, active nav */
+    --brand-hover:   #115E59;   /* teal-800 */
+    --brand-text-on: #FFFFFF;
+    --brand-soft:    #CCFBF1;   /* tinted backgrounds: active filters, highlights */
+
+    /* Surfaces & text (slate) */
+    --surface-page:  #F8FAFC;
+    --surface-card:  #FFFFFF;
+    --text-strong:   #0F172A;
+    --text-muted:    #475569;
+    --border-subtle: #E2E8F0;
+
+    /* Status: foreground + tinted background pairs */
+    --status-success: #15803D;  --status-success-bg: #DCFCE7;
+    --status-warning: #B45309; --status-warning-bg: #FEF3C7;
+    --status-danger:  #B91C1C; --status-danger-bg:  #FEE2E2;
+    --status-info:    #1D4ED8; --status-info-bg:    #DBEAFE;
+
+    color-scheme: light;
+}
+
+[data-bs-theme=dark] {
+    --brand:         #14B8A6;   /* teal-500 */
+    --brand-hover:   #2DD4BF;   /* teal-400 */
+    --brand-text-on: #042F2E;   /* dark text ON the teal button — AA in both modes */
+    --brand-soft:    #134E4A;
+
+    --surface-page:  #0F172A;   /* slate-900 — never pure black */
+    --surface-card:  #1E293B;   /* slate-800 */
+    --text-strong:   #E2E8F0;   /* never pure white */
+    --text-muted:    #94A3B8;
+    --border-subtle: #334155;
+
+    --status-success: #4ADE80;  --status-success-bg: #14532D;
+    --status-warning: #FBBF24;  --status-warning-bg: #78350F;
+    --status-danger:  #F87171;  --status-danger-bg:  #7F1D1D;
+    --status-info:    #60A5FA;  --status-info-bg:    #1E3A8A;
+
+    color-scheme: dark;
+}
+
+/* ============ MAP BOOTSTRAP ONTO THE TOKENS ============ */
+[data-bs-theme=light], [data-bs-theme=dark] {
+    --bs-body-bg:         var(--surface-page);
+    --bs-body-color:      var(--text-strong);
+    --bs-secondary-color: var(--text-muted);
+    --bs-emphasis-color:  var(--text-strong);
+    --bs-border-color:    var(--border-subtle);
+    --bs-primary:         var(--brand);
+    --bs-card-bg:         var(--surface-card);
+}
+
+/* Brand buttons & links — Bootstrap compiles component hexes, so they
+   must be pointed at the tokens explicitly. */
+.btn-primary {
+    --bs-btn-bg: var(--brand);
+    --bs-btn-border-color: var(--brand);
+    --bs-btn-color: var(--brand-text-on);
+    --bs-btn-hover-color: var(--brand-text-on);
+    --bs-btn-hover-bg: var(--brand-hover);
+    --bs-btn-hover-border-color: var(--brand-hover);
+    --bs-btn-active-bg: var(--brand-hover);
+    --bs-btn-active-border-color: var(--brand-hover);
+}
+a, .link-primary { color: var(--brand); }
+a:hover           { color: var(--brand-hover); }
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--brand);
+    box-shadow: 0 0 0 .25rem color-mix(in srgb, var(--brand) 25%, transparent);
+}
+
+/* ============ SOFT STATUS BADGES (optional, readable in both modes) ============ */
+.badge-status-success { background: var(--status-success-bg); color: var(--status-success); }
+.badge-status-warning { background: var(--status-warning-bg); color: var(--status-warning); }
+.badge-status-danger  { background: var(--status-danger-bg);  color: var(--status-danger); }
+.badge-status-info    { background: var(--status-info-bg);    color: var(--status-info); }
+
+/* Purple badge (job salary) — Bootstrap has no bg-purple utility */
+.bg-purple { background-color: #6f42c1 !important; }
+.text-purple   { color: #6f42c1 !important; }
+.border-purple { border-color: #6f42c1 !important; }
+
+/* ============ DARK-MODE CORRECTIONS for classes already in the blades
+   (this is why no blade edits are needed) ============ */
+[data-bs-theme=dark] .text-dark  { color: var(--text-strong) !important; }
+[data-bs-theme=dark] .text-muted { color: var(--text-muted)   !important; }
+[data-bs-theme=dark] .bg-light   { background-color: var(--surface-card) !important; }
+
+[data-bs-theme=dark] .badge.bg-success { background: var(--status-success-bg) !important; color: var(--status-success) !important; }
+[data-bs-theme=dark] .badge.bg-warning { background: var(--status-warning-bg) !important; color: var(--status-warning) !important; }
+[data-bs-theme=dark] .badge.bg-danger  { background: var(--status-danger-bg)  !important; color: var(--status-danger)  !important; }
+[data-bs-theme=dark] .badge.bg-info    { background: var(--status-info-bg)    !important; color: var(--status-info)    !important; }
+
+[data-bs-theme=dark] .table-light, [data-bs-theme=dark] thead.table-light {
+    background-color: var(--surface-card) !important;
+    color: var(--text-strong) !important;
+    --bs-table-bg: transparent;
+    --bs-table-color: var(--text-strong);
+    --bs-table-border-color: var(--border-subtle);
+}
+[data-bs-theme=dark] .table-danger {
+    background-color: var(--status-danger-bg) !important;
+    --bs-table-bg: var(--status-danger-bg);
+    color: var(--text-strong);
+}
+[data-bs-theme=dark] .btn-light { --bs-btn-bg: var(--surface-card); --bs-btn-color: var(--text-strong); --bs-btn-border-color: var(--border-subtle); --bs-btn-hover-bg: var(--surface-page); --bs-btn-hover-color: var(--text-strong); }
+[data-bs-theme=dark] .btn-outline-light { --bs-btn-color: var(--text-strong); --bs-btn-border-color: var(--border-subtle); --bs-btn-hover-bg: var(--surface-card); --bs-btn-hover-color: var(--text-strong); }
+
+/* ============ THEME TOGGLE, TOAST & NOTIFICATION ENTRIES (theme-wiring) ============ */
+
+.theme-toggle-btn {
+    position: fixed;
+    bottom: 1rem;
+    left: 1rem;
+    z-index: 1040;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface-card);
+    color: var(--text-strong);
+    border: 1px solid var(--border-subtle);
+    box-shadow: 0 .5rem 1.5rem rgba(0,0,0,.15);
+    cursor: pointer;
+}
+.theme-toggle-btn:hover { background: var(--brand-soft); }
+
+.toast-notification {
+    position: fixed;
+    bottom: 1rem;
+    right: 1rem;
+    max-width: 20rem;
+    z-index: 1080;
+    background: var(--surface-card);
+    color: var(--text-strong);
+    border-left: 4px solid var(--status-info);
+    border-radius: .5rem;
+    padding: .75rem 1rem;
+    box-shadow: 0 .5rem 1.5rem rgba(0,0,0,.2);
+    cursor: pointer;
+    opacity: 1;
+    transition: opacity .3s, transform .3s;
+}
+.toast-notification.toast-out { opacity: 0; transform: translateX(1rem); }
+
+/* Dark-mode gaps in the existing blades: the navbar and page header use
+   .bg-white / .navbar-light, which stay blinding white in dark mode. */
+[data-bs-theme=dark] .bg-white { background-color: var(--surface-card) !important; }
+[data-bs-theme=dark] .navbar-light {
+    --bs-navbar-color: var(--text-muted);
+    --bs-navbar-hover-color: var(--text-strong);
+    --bs-navbar-active-color: var(--brand);
+    --bs-navbar-brand-color: var(--text-strong);
+    --bs-navbar-brand-hover-color: var(--brand-hover);
+    --bs-navbar-toggler-border-color: var(--border-subtle);
+}
+[data-bs-theme=dark] .navbar-light .navbar-toggler-icon {
+    filter: invert(1) hue-rotate(180deg);
+}
+[data-bs-theme=dark] .text-secondary { color: var(--text-muted) !important; }
+
+/* Dark-mode variant for the custom purple stat card (admin dashboard) */
+[data-bs-theme=dark] .text-purple   { color: #A78BFA !important; }
+[data-bs-theme=dark] .border-purple { border-color: #A78BFA !important; }
+
+/* ============ AUTH PAGES (standalone pages, shared auth styling) ============ */
+.auth-body {
+    font-family: 'Figtree', sans-serif;
+    background: linear-gradient(
+        to bottom right,
+        color-mix(in srgb, var(--brand) 14%, var(--surface-page)),
+        var(--surface-page)
+    );
+    color: var(--text-strong);
+}
+.auth-body a { text-decoration: none; }
+.auth-body .header-title { color: var(--brand); }
+.auth-body .text-primary  { color: var(--brand) !important; }
+
+.auth-body .card-glass {
+    background: color-mix(in srgb, var(--surface-card) 88%, transparent);
+    backdrop-filter: blur(12px);
+    border-radius: 1rem;
+    border-top: 0.3rem solid var(--brand);
+    box-shadow: 0 0.5rem 1.5rem rgba(0,0,0,0.1);
+    transition: transform 0.2s, box-shadow 0.3s;
+}
+.auth-body .card-glass:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 1rem 2rem rgba(0,0,0,0.15);
+}
+/* Amber accent variant (pending-approval) */
+.auth-body .card-glass-warning { border-top-color: var(--status-warning); }
+
+.auth-body .btn-brand {
+    background-color: var(--brand);
+    border-color: var(--brand);
+    color: var(--brand-text-on);
+    font-weight: 600;
+}
+.auth-body .btn-brand:hover,
+.auth-body .btn-brand:focus {
+    background-color: var(--brand-hover);
+    border-color: var(--brand-hover);
+    color: var(--brand-text-on);
+}
+
+.auth-body .icon-circle { width: 64px; height: 64px; font-size: 2rem; }
+.auth-body .alert { border-radius: 0.75rem; }
+
+/* Pending-approval icon circle: amber pair in both modes */
+[data-bs-theme=dark] .auth-body .bg-warning {
+    background-color: var(--status-warning-bg) !important;
+    color: var(--status-warning) !important;
+}
+
+/* ============ PASSWORD SHOW/HIDE EYE ============ */
+.password-wrap { position: relative; }
+.password-wrap .form-control { padding-right: 3rem; }
+.password-eye {
+    position: absolute;
+    top: 50%;
+    right: 0.25rem;
+    transform: translateY(-50%);
+    z-index: 5;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    padding: 0.375rem 0.75rem;
+    cursor: pointer;
+}
+.password-eye:hover { color: var(--brand); }
