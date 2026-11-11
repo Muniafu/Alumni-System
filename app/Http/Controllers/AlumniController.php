@@ -24,7 +24,7 @@ class AlumniController extends Controller
 
         $user = Auth::user();
         $this->ensureProfileExists($user);
-        $profile = $user->profile;
+        $profile = $user->profile()->first();
         $profile->calculateCompletion();
 
         // Jobs: Recent + user's postings
@@ -134,7 +134,7 @@ class AlumniController extends Controller
     protected function ensureProfileExists(User $user): void
     {
         if (!$user->profile) {
-            $user->profile()->create([
+            $profile = $user->profile()->create([
                 'phone' => null,
                 'address' => null,
                 'current_job' => null,
@@ -145,6 +145,10 @@ class AlumniController extends Controller
                 'interests' => [],
                 'profile_completion' => 0,
             ]);
+            // Sync the cached relation — it was resolved as null by the check
+            // above, and without this every later $user->profile in this
+            // request (blade included) still sees null.
+            $user->setRelation('profile', $profile);
         }
     }
 

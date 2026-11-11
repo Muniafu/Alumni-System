@@ -72,12 +72,19 @@ class AdminController extends Controller
         // -----------------------------
         // Event Statistics
         // -----------------------------
+
+        $totalEvents = Event::count();
+
         $eventStats = [
-            'total' => Event::count(),
+            'total' => $totalEvents,
             'upcoming' => Event::where('start', '>=', now())->count(),
             'past' => Event::where('start', '<', now())->count(),
             'rsvps' => EventRsvp::count(),
-            'avg_attendance' => Event::withCount('rsvps')->get()->avg('rsvps_count') ?? 0,
+            // Averaging a count = total ÷ number of rows — no need to
+            // load every Event into memory with withCount()->get()->avg().
+            'avg_attendance' => $totalEvents > 0
+                ? round(EventRsvp::count() / $totalEvents, 1)
+                : 0,
         ];
 
         // Last 10 past events with attendance
@@ -91,11 +98,15 @@ class AdminController extends Controller
         // -----------------------------
         // Job Statistics
         // -----------------------------
+        $totalJobs = JobPosting::count();
+
         $jobStats = [
-            'total' => JobPosting::count(),
+            'total' => $totalJobs,
             'active' => JobPosting::where('application_deadline', '>=', now())->count(),
             'applications' => JobApplication::count(),
-            'avg_applications' => JobPosting::withCount('applications')->get()->avg('applications_count') ?? 0,
+            'avg_applications' => $totalJobs > 0
+                ? round(JobApplication::count() / $totalJobs, 1)
+                : 0,
         ];
 
         // -----------------------------
@@ -126,13 +137,15 @@ class AdminController extends Controller
         ];
 
         // -----------------------------
-        // Recent Platform Activities
+        // Recent Activity feed
         // -----------------------------
-        $recentActivities = Event::with('organizer')->latest()->limit(3)->get()
-            ->concat(JobPosting::with('poster')->latest()->limit(3)->get())
-            ->concat(ForumThread::with('author')->latest()->limit(3)->get())
+        $recentActivities = collect()
+            ->merge(Event::with('organizer')->latest()->take(5)->get())
+            ->merge(JobPosting::with('poster')->latest()->take(5)->get())
+            ->merge(ForumThread::with('author')->latest()->take(5)->get())
             ->sortByDesc('created_at')
-            ->take(5);
+            ->take(10)
+            ->values();
 
         return view('admin.dashboard', compact(
             'userCounts',

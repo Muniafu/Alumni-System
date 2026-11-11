@@ -29,13 +29,28 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
+        // Clear any stale intended URL from previous user session to prevent 403 mismatches
+        $request->session()->forget('url.intended');
+
         $user = Auth::user();
 
-        // Unapproved users land on the friendly pending page insted of
-        // bouncing off the `approved` middleware (error / redirect loop).
+        // Unapproved users land on the friendly pending page insted of aloop
         if (!$user->is_approved) {
             return redirect()->route('pending-approval')
                 ->with('info', 'Your account is pending admin approval.');
+        }
+
+        // Role-based redirection
+        if ($user->hasRole('admin')) {
+            return redirect()->route('admin.dashboard'); //Adjust path if your route is named differently
+        }
+
+        if ($user->hasRole('alumni')) {
+            return redirect()->route('alumni.dashboard');
+        }
+
+        if ($user->hasRole('student')) {
+            return redirect()->route('student.dashboard');
         }
 
         return redirect()->intended(RouteServiceProvider::HOME);

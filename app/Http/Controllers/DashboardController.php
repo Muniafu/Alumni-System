@@ -82,14 +82,30 @@ class DashboardController extends Controller
                 ->count(),
         ];
 
-        // Recent activity — all Eloquent models, so the merged collection is
-        // uniform (the old version mixed in stdClass rows from two tables
-        // that don't even exist).
+        // Chart datasets — the dashboard blade injects these straight into
+        // Chart.js; a missing variable is a 500 on the entire page.
+        $userGrowth = DB::table('users')
+            ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as `month`, COUNT(*) as `count`")
+            ->where('created_at', '>=', now()->subMonths(12)->startOfMonth())
+            ->groupBy('month')
+            ->orderBy('month')
+            ->get();
+
+        $eventAttendance = Event::withCount('rsvps')
+            ->orderByDesc('rsvps_count')
+            ->take(10)
+            ->get()
+            ->map(fn ($event) => [
+                'name' => $event->title,
+                'attendance' => $event->rsvps_count,
+            ]);
+
+        // Recent activity — Eloquent models only, so the merged collection
+        // is uniform. Only approved users are merged (see Fix 2).
         $recentActivities = collect()
-            ->merge(Event::latest()->take(5)->get())
-            ->merge(JobPosting::latest()->take(5)->get())
-            ->merge(ForumThread::latest()->take(5)->get())
-            ->merge(User::latest()->take(5)->get())
+            ->merge(Event::with('organizer')->latest()->take(5)->get())
+            ->merge(JobPosting::with('poster')->latest()->take(5)->get())
+            ->merge(ForumThread::with('author')->latest()->take(5)->get())
             ->merge(User::whereNotNull('approved_at')->latest('approved_at')->take(5)->get())
             ->sortByDesc('created_at')
             ->take(10);
@@ -99,6 +115,8 @@ class DashboardController extends Controller
             'eventStats',
             'jobStats',
             'forumStats',
+            'userGrowth',
+            'eventAttendance',
             'recentActivities'
         ));
     }

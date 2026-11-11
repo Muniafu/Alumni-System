@@ -38,6 +38,7 @@ class StudentController extends Controller
         Gate::authorize('access-student-dashboard');
 
         $user = Auth::user();
+        $this->ensureProfileExists($user);
         $user->load('profile');
 
         $canViewEvents = $user->can('view-events');
@@ -94,6 +95,8 @@ class StudentController extends Controller
             'phone' => ['nullable', 'string', 'max:20'],
             'address' => ['nullable', 'string', 'max:255'],
             'bio' => ['nullable', 'string'],
+            'skills' => ['nullable', 'string', 'max:255'],
+            'interests' => ['nullable', 'string', 'max:255'],
             'linkedin' => ['nullable', 'url'],
             'twitter' => ['nullable', 'url'],
         ]);
@@ -132,10 +135,12 @@ class StudentController extends Controller
             'phone' => $data['phone'] ?? null,
             'address' => $data['address'] ?? null,
             'bio' => $data['bio'] ?? null,
-            'social_links' => [
+            'skills' => $data['skills'] ?? null,
+            'interests' => $data['interests'] ?? null,
+            'social_links' => array_filter([
                 'linkedin' => $data['linkedin'] ?? null,
                 'twitter' => $data['twitter'] ?? null,
-            ],
+            ]),
         ];
     }
 }

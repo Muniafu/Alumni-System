@@ -16,8 +16,8 @@ class NotificationController extends Controller
         $filter = $request->get('filter', 'all');
 
         $notifications = $filter === 'unread'
-            ? auth()->user()->unreadNotifications()->paginate(10)
-            : auth()->user()->notifications()->paginate(10);
+            ? auth()->user()->unreadNotifications()->latest()->paginate(10)
+            : auth()->user()->notifications()->latest()->paginate(10);
 
         return view('notifications.index', compact('notifications', 'filter'));
     }
@@ -34,9 +34,16 @@ class NotificationController extends Controller
         return response()->json(['success' => true]);
     }
 
-    public function markAllAsRead()
+    public function markAllAsRead(Request $request)
     {
-        auth()->user()->unreadNotifications->markAsRead();
+        // Query update, not the Collection: unreadNotifications (property)
+        // returns a Collection, which has no markAsRead() — that crashed.
+        auth()->user()->unreadNotifications()->update(['read_at' => now()]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['success' => true]);
+        }
+
         return back()->with('success', 'All notifications marked as read');
     }
 

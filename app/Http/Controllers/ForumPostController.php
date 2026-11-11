@@ -38,6 +38,7 @@ class ForumPostController extends Controller
         // Also notify the thread author if they're not the one posting
         // and are not already covered as a subscriber
         if ($thread->user_id != $userId
+            && $thread->author
             && !$subscribers->contains(fn ($subscriber) => $subscriber->id === $thread->user_id)) {
             $thread->author->notify(new NewForumPostNotification($post));
         }
@@ -88,13 +89,6 @@ class ForumPostController extends Controller
 
         $thread = $post->thread;
         $post->delete();
-
-        // If this was the only post in the thread, delete the thread too
-        if ($thread->posts()->count() === 0) {
-            $thread->delete();
-            return redirect()->route('forum.categories.show', $thread->category)
-                ->with('success', 'Thread deleted successfully');
-        }
 
         return redirect()->route('forum.threads.show', $thread)
             ->with('success', 'Post deleted successfully');

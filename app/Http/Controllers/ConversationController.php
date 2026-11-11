@@ -33,11 +33,14 @@ class ConversationController extends Controller
     /**
      * Show the form for starting a new conversation.
      */
-    public function create()
+    public function create(Request $request)
     {
         $users = User::where('id', '!=', auth()->id())
             ->approved()
             ->get();
+
+        // Directory "Send Message" links arrive as ?recipients[]=ID
+        $preselected = $request->query('recipients', []);
 
         return view('messaging.create', compact('users'));
     }

@@ -239,8 +239,8 @@ class EventController extends Controller
 
         $rsvp = $result['rsvp'];
 
-        // Notify organizer if not self
-        if ($event->organizer && $event->organizer->id != auth()->id()) {
+        // Notify organizer if not self and not a "not going" update
+        if ($event->organizer && $event->organizer->id != auth()->id() && $validated['status'] !== 'not_going') {
             $event->organizer->notify(new EventRsvpNotification($rsvp));
         }
 

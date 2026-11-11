@@ -38,7 +38,7 @@ class ProfileController extends Controller
             'bio' => null,
             'skills' => '',
             'interests' => '',
-            'social_links' => '',
+            'social_links' => [],
             'profile_completion' => 0,
         ]);
 

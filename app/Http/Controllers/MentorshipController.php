@@ -190,7 +190,7 @@ class MentorshipController extends Controller
 
             // Notify mentee + admins (Mentorship::create does not trigger
             // the model's "updated" hook, so no duplication here)
-            $mentorshipRequest->mentee->notify(new MentorshipAcceptedNotification($mentorship));
+            $mentorshipRequest->mentee?->notify(new MentorshipAcceptedNotification($mentorship));
             Notification::send(User::role('admin')->get(), new MentorshipAcceptedNotification($mentorship));
 
             return back()->with('success', 'Mentorship request accepted.');
@@ -202,7 +202,7 @@ class MentorshipController extends Controller
             'response_message' => $request->message ?? 'Request declined',
         ]);
 
-        $mentorshipRequest->mentee->notify(
+        $mentorshipRequest->mentee?->notify(
             new MentorshipStatusChangedNotification($mentorshipRequest, 'rejected')
         );
         Notification::send(

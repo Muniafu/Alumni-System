@@ -331,7 +331,7 @@ class JobPostingController extends Controller
 
         return $disk->download(
             $application->resume_path,
-            $application->applicant->name . '_resume.' . pathinfo($application->resume_path, PATHINFO_EXTENSION)
+            ($application->applicant?->name ?? 'applicant') . '_resume.' . pathinfo($application->resume_path, PATHINFO_EXTENSION)
         );
     }
 }
