@@ -160,6 +160,8 @@
                             J
                         @elseif($activity instanceof \App\Models\ForumThread)
                             F
+                        @elseif($activity instanceof \App\Models\User)
+                            U
                         @endif
                     </div>
                     <div class="flex-fill">
@@ -170,6 +172,8 @@
                                 New Job Posting: {{ $activity->title }}
                             @elseif($activity instanceof \App\Models\ForumThread)
                                 New Forum Thread: {{ $activity->title }}
+                            @elseif($activity instanceof \App\Models\User)
+                                New Member: {{ $activity->name }}
                             @endif
                         </p>
                         <p class="small text-muted mb-0">
@@ -179,6 +183,8 @@
                                 Posted by {{ $activity->poster?->name ?? 'Unknown' }}
                             @elseif($activity instanceof \App\Models\ForumThread)
                                 Started by {{ $activity->author?->name ?? 'Unknown' }}
+                            @elseif($activity instanceof \App\Models\User)
+                                Account approved
                             @endif
                         </p>
                     </div>
@@ -199,36 +205,57 @@
         </div>
     </div>
 </div>
-
-<style>
-.border-purple { border-color: #6f42c1 !important; }
-.text-purple { color: #6f42c1 !important; }
-</style>
 @endsection
 
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    // User Growth Chart (example)
-    const userCtx = document.getElementById('userGrowthChart').getContext('2d');
-    new Chart(userCtx, {
+    // Read the design tokens so the charts follow light/dark mode
+    const css = getComputedStyle(document.documentElement);
+    const token = (name, fallback) => css.getPropertyValue(name).trim() || fallback;
+
+    const gridColor  = token('--border-subtle',  '#E2E8F0');
+    const labelColor = token('--text-muted',     '#475569');
+    const brand      = token('--brand',          '#0F766E');
+    const success    = token('--status-success', '#15803D');
+
+    const baseOptions = {
+        responsive: true,
+        plugins: { legend: { labels: { color: labelColor } } },
+        scales: {
+            x: { ticks: { color: labelColor }, grid: { color: gridColor } },
+            y: { ticks: { color: labelColor }, grid: { color: gridColor }, beginAtZero: true }
+        }
+    };
+
+    // User Growth Chart
+    new Chart(document.getElementById('userGrowthChart').getContext('2d'), {
         type: 'line',
         data: {
             labels: @json(array_column($userGrowth->toArray(), 'month')),
-            datasets: [{ label: 'New Users', data: @json(array_column($userGrowth->toArray(), 'count')), borderColor: '#0d6efd' }]
+            datasets: [{
+                label: 'New Users',
+                data: @json(array_column($userGrowth->toArray(), 'count')),
+                borderColor: brand,
+                backgroundColor: brand,
+                tension: 0.3
+            }]
         },
-        options: { responsive: true }
+        options: baseOptions
     });
 
-    // Event Attendance Chart (example; use $eventAttendance)
-    const eventCtx = document.getElementById('eventAttendanceChart').getContext('2d');
-    new Chart(eventCtx, {
+    // Event Attendance Chart
+    new Chart(document.getElementById('eventAttendanceChart').getContext('2d'), {
         type: 'bar',
         data: {
             labels: @json(array_column($eventAttendance->toArray(), 'name')),
-            datasets: [{ label: 'Attendance', data: @json(array_column($eventAttendance->toArray(), 'attendance')), backgroundColor: '#198754' }]
+            datasets: [{
+                label: 'Attendance',
+                data: @json(array_column($eventAttendance->toArray(), 'attendance')),
+                backgroundColor: success
+            }]
         },
-        options: { responsive: true }
+        options: baseOptions
     });
 </script>
 @endpush

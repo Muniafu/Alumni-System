@@ -12,14 +12,39 @@
 @endsection
 
 @section('content')
+{{-- Flash Messages --}}
+@if(session('success'))
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fa-solid fa-circle-check me-2"></i> {{ session('success') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+@endif
+@if(session('error'))
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fa-solid fa-triangle-exclamation me-2"></i> {{ session('error') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+@endif
+@if ($errors->any())
+    <div class="alert alert-danger">
+        <ul class="mb-0">
+            @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
+
 <div class="container py-4">
     <div class="row justify-content-center">
         <div class="col-lg-8">
             <div class="card shadow-sm border-0 mb-4">
                 <div class="card-body text-center">
                     <!-- Mentor Avatar -->
-                    <img src="{{ $mentor->profile->avatar_url ?? asset('images/default-avatar.png') }}"
-                         alt="{{ $mentor->name }}" class="rounded-circle mb-3" width="120" height="120">
+                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mb-3 mx-auto"
+                         style="width: 120px; height: 120px; font-weight: 600; font-size: 2.5rem;">
+                        {{ strtoupper(substr($mentor->name, 0, 1)) }}
+                    </div>
 
                     <!-- Name & Role -->
                     <h3 class="fw-bold mb-1">{{ $mentor->name }}</h3>
@@ -52,14 +77,15 @@
                             <h5 class="mb-0"><i class="fa-solid fa-lightbulb me-1"></i> Skills & Expertise</h5>
                         </div>
                         <div class="card-body">
-                            @if($mentor->profile->skills && count($mentor->profile->skills) > 0)
+                            @php($mentorSkills = $mentor->profile?->skills_array ?? [])
+                            @if (count($mentorSkills) > 0)
                                 <div class="d-flex flex-wrap">
-                                    @foreach($mentor->profile->skills as $skill)
+                                    @foreach ($mentorSkills as $skill)
                                         <span class="badge bg-secondary me-1 mb-1">{{ $skill }}</span>
                                     @endforeach
                                 </div>
                             @else
-                                <p class="text-muted mb-0">No skills specified</p>
+                                <p class="text-secondary mb-0">No skills listed.</p>                                
                             @endif
                         </div>
                     </div>

@@ -5,8 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Login - Alumni System</title>
 
+    {{-- FOUC guard: must be the FIRST thing in head, BEFORE any stylesheet --}}
+    <script>
+        (function () {
+            var t = localStorage.getItem('theme');
+            if (!t) t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-bs-theme', t);
+        })();
+    </script>
+
     <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Bootstrap Icons (toggle icon) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <!-- Design tokens (AFTER Bootstrap) -->
+    <link href="/css/theme.css" rel="stylesheet">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
@@ -17,13 +32,18 @@
     <style>
         body {
             font-family: 'Figtree', sans-serif;
-            background: linear-gradient(to bottom right, #e6f0ff, #e6ffe6); /* Calm and inviting */
+            background: linear-gradient(
+                to bottom right,
+                color-mix(in srgb, var(--brand) 14%, var(--surface-page)),
+                var(--surface-page)
+            );
+            color: var(--text-strong);
         }
         .card-glass {
-            background: rgba(255,255,255,0.85);
+            background: color-mix(in srgb, var(--surface-card) 88%, transparent);
             backdrop-filter: blur(12px);
             border-radius: 1rem;
-            border-top: 0.3rem solid #0d6efd; /* Brand primary color */
+            border-top: 0.3rem solid var(--brand);
             box-shadow: 0 0.5rem 1.5rem rgba(0,0,0,0.1);
             transition: transform 0.2s, box-shadow 0.3s;
         }
@@ -32,28 +52,33 @@
             box-shadow: 0 1rem 2rem rgba(0,0,0,0.15);
         }
         .btn-brand {
-            background-color: #0d6efd;
+            background-color: var(--brand);
+            border-color: var(--brand);
             color: #fff;
             font-weight: 600;
         }
         .btn-brand:hover {
-            background-color: #0b5ed7;
+            background-color: color-mix(in srgb, var(--brand) 85%, #000);
+            border-color: color-mix(in srgb, var(--brand) 85%, #000);
+            color: #fff;
         }
         .header-title {
-            color: #0d6efd;
+            color: var(--brand);
         }
         a {
             text-decoration: none;
         }
     </style>
 </head>
-<body>
+<body class="auth-body">
 
     <div class="d-flex flex-column justify-content-center align-items-center min-vh-100 px-3">
 
         <!-- Branding -->
         <div class="text-center mb-5">
-            <img src="/images/logo.png" alt="Alumni Logo" class="rounded-circle shadow-sm mb-3" style="width: 80px; height: 80px;">
+            <div class="mb-3" style="width: 80px; height: 80px; margin: 0 auto;">
+                <x-application-logo class="w-100 h-100" />
+            </div>
             <h1 class="display-5 fw-bold header-title">Welcome Back</h1>
             <p class="text-secondary">Log in to continue your alumni journey</p>
         </div>
@@ -79,8 +104,13 @@
                     <!-- Password -->
                     <div class="mb-3">
                         <label for="password" class="form-label fw-semibold">Password</label>
-                        <input type="password" name="password" id="password" class="form-control rounded-pill shadow-sm"
-                               required autocomplete="current-password">
+                        <div class="password-wrap">
+                            <input type="password" name="password" id="password" class="form-control rounded-pill shadow-sm"
+                                required autocomplete="current-password">
+                            <button type="button" class="password-eye" data-toggle-password for="password" aria-label="Show password">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
                         <x-input-error :messages="$errors->get('password')" class="text-danger mt-1" />
                     </div>
 
@@ -115,8 +145,16 @@
             &copy; {{ date('Y') }} Alumni System. All rights reserved.
         </footer>
     </div>
-
+    
+    {{-- Theme toggle --}}
+    <button id="themeToggle" class="theme-toggle-btn" type="button" aria-label="Toggle dark mode" title="Toggle theme">
+        <i class="bi bi-moon-stars"></i>
+    </button>
+    
+    <script src="/js/theme-toggle.js"></script>
+    <script src="/js/password-toggle.js"></script>
+    
     <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

@@ -9,6 +9,20 @@
 @endsection
 
 @section('content')
+{{-- Flash Messages --}}
+@if(session('success'))
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fa-solid fa-circle-check me-2"></i> {{ session('success') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+@endif
+@if(session('error'))
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fa-solid fa-triangle-exclamation me-2"></i> {{ session('error') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+@endif
+
 <div class="container py-4">
     <div class="row justify-content-center">
         <div class="col-md-8">
@@ -49,7 +63,7 @@
                                     <div class="card mb-3 shadow-sm border-0">
                                         <div class="card-body">
                                             <div class="d-flex justify-content-between align-items-start mb-2">
-                                                <h5 class="mb-1">Request from {{ $request->mentee->name }}</h5>
+                                                <h5 class="mb-1">Request from {{ $request->mentee?->name ?? 'Former member' }}</h5>
                                                 <span class="badge
                                                     @if($request->status === 'pending') bg-warning text-dark
                                                     @elseif($request->status === 'accepted') bg-success text-light
@@ -100,7 +114,7 @@
                                     <div class="card mb-3 shadow-sm border-0">
                                         <div class="card-body">
                                             <div class="d-flex justify-content-between align-items-start mb-2">
-                                                <h5 class="mb-1">Request to {{ $request->mentor->name }}</h5>
+                                                <h5 class="mb-1">Request to {{ $request->mentor?->name ?? 'Former member' }}</h5>
                                                 <span class="badge
                                                     @if($request->status === 'pending') bg-warning text-dark
                                                     @elseif($request->status === 'accepted') bg-success text-light

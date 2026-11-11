@@ -37,7 +37,7 @@
             <h1 class="fw-bold text-dark">{{ $event->title }}</h1>
             <p class="text-muted small">
                 <i class="bi bi-person-circle text-secondary"></i>
-                Organized by <strong>{{ $event->organizer->name }}</strong>
+                Organized by <strong>{{ $event->organizer?->name ?? 'Former member' }}</strong>
             </p>
 
             <div class="mt-4 bg-light p-4 rounded shadow-sm">
@@ -170,6 +170,7 @@
             </h3>
             <div class="row g-3">
                 @foreach($attendees as $rsvp)
+                    @continue(!$rsvp->user)
                     <div class="col-md-4">
                         <div class="d-flex align-items-center p-3 bg-light rounded shadow-sm">
                             <img src="{{ $rsvp->user->profile_photo_url }}"

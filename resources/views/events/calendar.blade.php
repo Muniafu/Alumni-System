@@ -54,7 +54,7 @@
 
                     const locationEl = document.createElement('div');
                     locationEl.classList.add('small', 'text-muted', 'mt-1');
-                    locationEl.innerHTML = '<i class="fa-solid fa-location-dot me-1 text-secondary"></i>';
+                    locationEl.innerHTML = '<i class="bi bi-geo-alt me-1 text-secondary"></i>';
                     locationEl.append(document.createTextNode(location || ''));
 
                     return { domNodes: [titleEl, locationEl] };

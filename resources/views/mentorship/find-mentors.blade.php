@@ -14,6 +14,20 @@
 @endsection
 
 @section('content')
+{{-- Flash Messages --}}
+@if(session('success'))
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fa-solid fa-circle-check me-2"></i> {{ session('success') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+@endif
+@if(session('error'))
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fa-solid fa-triangle-exclamation me-2"></i> {{ session('error') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+@endif
+
 <div class="container py-4">
     <div class="row justify-content-center">
         <div class="col-lg-12">
@@ -35,9 +49,10 @@
                                     <div class="card h-100 shadow-sm hover-shadow border-0">
                                         <div class="card-body d-flex flex-column">
                                             <div class="d-flex align-items-center mb-3">
-                                                <img src="{{ $mentor->profile->avatar_url ?? asset('images/default-avatar.png') }}"
-                                                     alt="{{ $mentor->name }}"
-                                                     class="rounded-circle me-3" width="60" height="60">
+                                                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3"
+                                                     style="width: 60px; height: 60px; font-weight: 600; font-size: 1.25rem;">
+                                                    {{ strtoupper(substr($mentor->name, 0, 1)) }}
+                                                </div>
                                                 <div>
                                                     <h5 class="mb-0">{{ $mentor->name }}</h5>
                                                     <p class="text-secondary mb-0">
@@ -50,17 +65,17 @@
                                                 <p class="text-secondary small mb-3">{{ Str::limit($mentor->mentorProfile->bio, 120) }}</p>
                                             @endif
 
-                                            @if($mentor->profile->skills && count($mentor->profile->skills) > 0)
+                                            @php($mentorSkills = $mentor->profile->skills_array ?? [])
+                                            @if (count($mentorSkills) > 0)
                                                 <div class="mb-3">
                                                     <h6 class="fw-medium">Skills:</h6>
                                                     <div class="d-flex flex-wrap">
-                                                        @foreach(array_slice($mentor->profile->skills, 0, 5) as $skill)
+                                                        @foreach (array_slice($mentorSkills, 0, 5) as $skill)
                                                             <span class="badge bg-success text-light me-1 mb-1">{{ $skill }}</span>
                                                         @endforeach
                                                     </div>
                                                 </div>
                                             @endif
-
                                             <a href="{{ route('mentorship.show-mentor', $mentor) }}"
                                                class="btn btn-primary mt-auto">
                                                 <i class="fa-solid fa-arrow-right me-1"></i> View Profile

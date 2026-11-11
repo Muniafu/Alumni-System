@@ -81,7 +81,7 @@
                             <div class="d-flex flex-wrap gap-3 mt-2 small text-muted">
                                 <span>
                                     <i class="fa-solid fa-user-tie me-1"></i>
-                                    Organized by {{ $event->organizer->name }}
+                                    Organized by {{ $event->organizer?->name ?? 'Former member' }}
                                 </span>
                                 <span>
                                     {{-- Uses the withCount value from the controller (no N+1 count queries) --}}

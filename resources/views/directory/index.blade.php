@@ -106,16 +106,17 @@
                                         <div class="fw-medium">{{ $user->profile->company }}</div>
                                     </li>
                                     @endif
-                                    @if($user->profile->skills)
+                                    @php($userSkills = $user->profile->skills_array ?? [])
+                                    @if(count($userSkills) > 0)
                                     <li class="mt-2">
                                         <small class="text-muted">Skills:</small>
                                         <div class="d-flex flex-wrap gap-1 mt-1">
-                                            @foreach(array_slice($user->profile->skills, 0, 3) as $skill)
+                                            @foreach(array_slice($userSkills, 0, 3) as $skill)
                                                 <span class="badge bg-light text-dark border">{{ $skill }}</span>
                                             @endforeach
-                                            @if(count($user->profile->skills) > 3)
+                                            @if(count($userSkills) > 3)
                                                 <span class="badge bg-light text-dark border">
-                                                    +{{ count($user->profile->skills) - 3 }} more
+                                                    +{{ count($userSkills) - 3 }} more
                                                 </span>
                                             @endif
                                         </div>

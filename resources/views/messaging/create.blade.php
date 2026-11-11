@@ -22,7 +22,10 @@
                         <label for="recipients" class="form-label fw-semibold">Recipients</label>
                         <select name="recipients[]" id="recipients" multiple class="form-select" aria-label="Select recipients">
                             @foreach($users as $user)
-                                <option value="{{ $user->id }}">{{ $user->name }}</option>
+                                <option value="{{ $user->id }}"
+                                        {{ in_array($user->id, $preselected) ? 'selected' : '' }}>
+                                    {{ $user->name }}
+                                </option>
                             @endforeach
                         </select>
                         <small class="form-text text-muted">Select one or more recipients for this conversation.</small>
@@ -56,12 +59,15 @@
 
 @push('scripts')
 <script>
-    // Initialize Select2 for multi-select recipients (optional enhancement)
-    $(document).ready(function() {
-        $('#recipients').select2({
-            placeholder: "Select recipients",
-            width: '100%'
-        });
+    // Initialize Select2 for multi-select recipients — only if the
+    // plugin is actually loaded; otherwise the native multi-select works.
+    document.addEventListener('DOMContentLoaded', function() {
+        if (window.jQuery && jQuery.fn && jQuery.fn.select2) {
+            jQuery('#recipients').select2({
+                placeholder: "Select recipients",
+                width: '100%'
+            });
+        }
     });
 </script>
 @endpush

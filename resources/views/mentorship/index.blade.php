@@ -22,9 +22,9 @@
                             <div>
                                 <h5 class="fw-bold mb-1">
                                     @if($mentorship->mentor_id === auth()->id())
-                                        Mentoring {{ $mentorship->mentee->name }}
+                                        Mentoring {{ $mentorship->mentee?->name ?? 'Former member' }}
                                     @else
-                                        Mentored by {{ $mentorship->mentor->name }}
+                                        Mentored by {{ $mentorship->mentor?->name ?? 'Former member' }}
                                     @endif
                                 </h5>
                                 <p class="text-secondary mb-2">

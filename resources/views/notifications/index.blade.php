@@ -3,18 +3,32 @@
 @section('header')
 <div class="d-flex justify-content-between align-items-center">
     <h2 class="fw-semibold text-primary mb-0">
-        <i class="fa-solid fa-bell me-2"></i> Your Notifications
+        <i class="bi bi-bell me-2"></i> Your Notifications
     </h2>
     <form action="{{ route('notifications.markAllAsRead') }}" method="POST">
         @csrf
         <button type="submit" class="btn btn-sm btn-outline-secondary">
-            <i class="fa-solid fa-check me-1"></i> Mark All as Read
+            <i class="bi bi-check2-all me-1"></i> Mark All as Read
         </button>
     </form>
 </div>
 @endsection
 
 @section('content')
+{{-- Flash Messages --}}
+@if(session('success'))
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-info-circle me-2"></i> {{ session('success') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+@endif
+@if(session('error'))
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle me-2"></i> {{ session('error') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+@endif
+
 <div class="row justify-content-center py-4">
     <div class="col-lg-8">
 
@@ -22,14 +36,15 @@
             <div class="card-body p-0">
                 @if($notifications->isEmpty())
                     <div class="alert alert-info m-4 text-center">
-                        <i class="fa-solid fa-info-circle me-2"></i> You have no notifications.
+                        <i class="bi bi-check-circle me-2"></i> You have no notifications.
                     </div>
                 @else
                     <div class="list-group list-group-flush">
                         @foreach($notifications as $notification)
                             <a href="{{ $notification->data['url'] ?? '#' }}"
-                               class="list-group-item list-group-item-action d-flex justify-content-between align-items-start
+                               class="notification-item list-group-item list-group-item-action d-flex justify-content-between align-items-start
                                       @if($notification->unread()) list-group-item-primary @endif"
+                                      data-id="{{ $notification->id }}"
                                aria-label="{{ $notification->data['message'] ?? 'Notification' }}">
                                 <div class="ms-2 me-auto">
                                     <div class="fw-semibold">{{ $notification->data['message'] ?? 'Notification' }}</div>

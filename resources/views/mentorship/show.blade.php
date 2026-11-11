@@ -17,9 +17,9 @@
                 <div>
                     <h3 class="fw-bold">
                         @if($mentorship->mentor_id === auth()->id())
-                            Mentoring {{ $mentorship->mentee->name }}
+                            Mentoring {{ $mentorship->mentee?->name ?? 'Former member' }}
                         @else
-                            Mentored by {{ $mentorship->mentor->name }}
+                            Mentored by {{ $mentorship->mentor?->name ?? 'Former member' }}
                         @endif
                     </h3>
                     <p class="text-muted small">
@@ -46,16 +46,16 @@
                         <div class="card-body d-flex align-items-start">
                             <div class="me-3">
                                 <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center" style="width:50px; height:50px;">
-                                    <span class="text-light fs-5">{{ substr($mentorship->mentor->name, 0, 1) }}</span>
+                                    <span class="text-light fs-5">{{ strtoupper(substr($mentorship->mentor?->name ?? 'Former member', 0, 1)) }}</span>
                                 </div>
                             </div>
                             <div>
-                                <h5 class="fw-medium mb-1">{{ $mentorship->mentor->name }}</h5>
+                                <h5 class="fw-medium mb-1">{{ $mentorship->mentor?->name ?? 'Former member' }}</h5>
                                 <p class="text-muted mb-0 small">
-                                    {{ $mentorship->mentor->profile->current_job ?? 'No job specified' }}
+                                    {{ $mentorship->mentor?->profile->current_job ?? 'No job specified' }}
                                 </p>
                                 <p class="text-muted mb-0 small">
-                                    {{ $mentorship->mentor->profile->company ?? 'No company specified' }}
+                                    {{ $mentorship->mentor?->profile->company ?? 'No company specified' }}
                                 </p>
                             </div>
                         </div>
@@ -68,16 +68,16 @@
                         <div class="card-body d-flex align-items-start">
                             <div class="me-3">
                                 <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center" style="width:50px; height:50px;">
-                                    <span class="text-light fs-5">{{ substr($mentorship->mentee->name, 0, 1) }}</span>
+                                    <span class="text-light fs-5">{{ strtoupper(substr($mentorship->mentee?->name ?? 'Former member', 0, 1)) }}</span>
                                 </div>
                             </div>
                             <div>
-                                <h5 class="fw-medium mb-1">{{ $mentorship->mentee->name }}</h5>
+                                <h5 class="fw-medium mb-1">{{ $mentorship->mentee?->name ?? 'Former member' }}</h5>
                                 <p class="text-muted mb-0 small">
-                                    Class of {{ $mentorship->mentee->graduation_year ?? 'N/A' }}
+                                    Class of {{ $mentorship->mentee?->graduation_year ?? 'N/A' }}
                                 </p>
                                 <p class="text-muted mb-0 small">
-                                    {{ $mentorship->mentee->program ?? 'No program specified' }}
+                                    {{ $mentorship->mentee?->program ?? 'No program specified' }}
                                 </p>
                             </div>
                         </div>

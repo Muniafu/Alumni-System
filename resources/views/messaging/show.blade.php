@@ -23,6 +23,20 @@
 @endsection
 
 @section('content')
+{{-- Flash Messages --}}
+@if(session('success'))
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fa-solid fa-circle-check me-2"></i> {{ session('success') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+@endif
+@if(session('error'))
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fa-solid fa-triangle-exclamation me-2"></i> {{ session('error') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+@endif
+
 <div class="row justify-content-center py-4">
     <div class="col-lg-8">
 
@@ -47,12 +61,12 @@
                       chat reads top-to-bottom and the newest sit at the
                       bottom, where the container auto-scrolls. --}}
                 @forelse($messages->reverse() as $message)
-                    <div class="d-flex {{ $message->sender->id === auth()->id() ? 'justify-content-end' : 'justify-content-start' }}">
+                    <div class="d-flex {{ $message->sender?->id === auth()->id() ? 'justify-content-end' : 'justify-content-start' }}">
                         <div class="p-3 rounded shadow-sm
-                            {{ $message->sender->id === auth()->id() ? 'bg-primary text-white' : 'bg-light text-dark' }}"
+                            {{ $message->sender?->id === auth()->id() ? 'bg-primary text-white' : 'bg-light text-dark' }}"
                             style="max-width: 75%;">
                             <div class="d-flex align-items-center mb-1">
-                                <span class="fw-bold">{{ $message->sender->name }}</span>
+                                <span class="fw-bold">{{ $message->sender->name ?? 'Former member' }}</span>
                                 <small class="text-muted ms-2">{{ $message->created_at->diffForHumans() }}</small>
                             </div>
                             <p class="mb-0">{{ $message->body }}</p>
@@ -79,7 +93,7 @@
 
         <!-- Pagination -->
         <div class="mb-3">
-            {{ $messages->links() }}
+            {{ $messages->links('pagination::bootstrap-5') }}
         </div>
 
         <!-- Send Message Form -->

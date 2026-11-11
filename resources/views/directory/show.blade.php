@@ -58,21 +58,23 @@
                                 <div class="card border-0 shadow-sm rounded-3 h-100">
                                     <div class="card-body">
                                         <h3 class="h6 fw-bold text-success mb-3">Skills & Interests</h3>
-                                        @if($user->profile->skills)
+                                        @php($profileSkills = $user->profile->skills_array ?? [])
+                                        @php($profileInterests = $user->profile->interests_array ?? [])
+                                        @if(count($profileSkills) > 0)
                                         <div class="mb-3">
                                             <span class="text-muted small">Skills:</span>
                                             <div class="mt-2 d-flex flex-wrap gap-2">
-                                                @foreach($user->profile->skills as $skill)
+                                                @foreach($profileSkills as $skill)
                                                     <span class="badge bg-primary-subtle text-primary fw-medium px-3 py-2 rounded-pill">{{ $skill }}</span>
                                                 @endforeach
                                             </div>
                                         </div>
                                         @endif
-                                        @if($user->profile->interests)
+                                        @if(count($profileInterests) > 0)
                                         <div>
                                             <span class="text-muted small">Interests:</span>
                                             <div class="mt-2 d-flex flex-wrap gap-2">
-                                                @foreach($user->profile->interests as $interest)
+                                                @foreach($profileInterests as $interest)
                                                     <span class="badge bg-purple text-white fw-medium px-3 py-2 rounded-pill">{{ $interest }}</span>
                                                 @endforeach
                                             </div>

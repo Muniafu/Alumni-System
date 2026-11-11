@@ -5,6 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
+    {{-- FOUC guard: set the theme BEFORE anything paints --}}
+    <script>
+        (function () {
+            var t = localStorage.getItem('theme');
+            if (!t) t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-bs-theme', t);
+        })();
+    </script>
+
     @auth
         <meta name="user-id" content="{{ auth()->id() }}">
     @endauth
@@ -17,6 +26,12 @@
 
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Design tokens (must load AFTER Bootstrap) -->
+    <link href="/css/theme.css" rel="stylesheet">
+
+    <!-- Bootstrap Icons (theme toggle uses bi-moon-stars / bi-sun) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
     <!-- Select2 -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
@@ -32,9 +47,9 @@
         window.Laravel = {
             csrfToken: '{{ csrf_token() }}',
             @auth
-            userId: '{{ auth()->id() }}',
+                userId: '{{ auth()->id() }}',
             @else
-            userId: null,
+                userId: null,
             @endauth
         };
     </script>
@@ -42,6 +57,7 @@
     <!-- Notification Sound -->
     <audio id="notificationSound" src="{{ asset('sounds/notification.mp3') }}" preload="auto"></audio>
 </head>
+
 <body class="bg-light">
     <div id="app">
         <!-- Navigation -->
@@ -62,46 +78,23 @@
         </main>
     </div>
 
+    {{-- Theme toggle (matches welcome/dashboard) --}}
+    <button id="themeToggle" class="theme-toggle-btn" type="button" aria-label="Toggle dark mode" title="Toggle theme">
+        <i class="bi bi-moon-stars"></i>
+    </button>
+    <script src="/js/theme-toggle.js"></script>
+    <script src="/js/password-toggle.js"></script>
+
     <!-- Bootstrap Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <!-- Select2 -->
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
-    <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        document.querySelectorAll('.mark-as-read').forEach(function (el) {
-            el.addEventListener('click', function (e) {
-                let notificationId = this.dataset.id;
-
-                // Send AJAX request
-                fetch(`/notifications/mark-as-read/${notificationId}`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                        'Accept': 'application/json'
-                    }
-                }).then(response => {
-                    if (response.ok) {
-                        // Decrease badge count
-                        let badge = document.getElementById('notificationBadge');
-                        if (badge) {
-                            let count = parseInt(badge.textContent.trim());
-                            if (count > 1) {
-                                badge.textContent = count - 1;
-                            } else {
-                                badge.remove();
-                            }
-                        }
-
-                        // Mark visually as read
-                        this.classList.remove('fw-bold', 'bg-light');
-                    }
-                });
-            });
-        });
-    });
-    </script>
+    {{-- The old inline mark-as-read script lived here. DELETED: app.js
+         already handles .mark-as-read clicks with one delegated listener —
+         keeping both fired TWO requests per click and decremented the
+         unread badge twice. --}}
 
     @stack('scripts')
 </body>

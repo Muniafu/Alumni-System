@@ -3,24 +3,51 @@
 @section('header')
 <div class="d-flex justify-content-between align-items-center">
     <h2 class="fw-semibold text-primary mb-0">{{ $job->title }}</h2>
-    @can('update', $job)
+    @canany(['update', 'delete'], $job)
     <div class="d-flex gap-2">
+        @can('update', $job)
         <a href="{{ route('jobs.edit', $job) }}" class="btn btn-outline-secondary btn-sm">
             <i class="fa-solid fa-pen me-1"></i> Edit
         </a>
-        <form method="POST" action="{{ route('jobs.destroy', $job) }}" onsubmit="return confirm('Are you sure you want to delete this job posting?');">
+        @endcan
+        @can('delete', $job)
+        <form method="POST" action="{{ route('jobs.destroy', $job) }}" onsubmit="return confirm('Are you dure you want to delete this job posting?');">
             @csrf
             @method('DELETE')
-            <button type="submit" class="btn btn-danger btn-sm">
+            <button type="submit" class="btn btn-outline-danger btn-sm">
                 <i class="fa-solid fa-trash me-1"></i> Delete
             </button>
         </form>
+        @endcan
     </div>
-    @endcan
+    @endcanany
 </div>
 @endsection
 
 @section('content')
+{{-- Flash Messages --}}
+@if(session('success'))
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fa-solid fa-circle-check me-2"></i> {{ session('success') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+@endif
+@if(session('error'))
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fa-solid fa-triangle-exclamation me-2"></i> {{ session('error') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+@endif
+@if ($errors->any())
+    <div class="alert alert-danger">
+        <ul class="mb-0">
+            @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
+
 <div class="row py-4">
     <div class="col-12">
         <div class="card shadow-sm border-0">
@@ -55,7 +82,7 @@
                                 Deadline: {{ $job->application_deadline->format('M j, Y') }}
                             </p>
                         @endif
-                        <p class="small text-muted">Posted by: {{ $job->poster->name }}</p>
+                        <p class="small text-muted">Posted by: {{ $job->poster?->name ?? 'Former member' }}</p>
                     </div>
                 </div>
 
@@ -112,7 +139,9 @@
                                     <form method="POST" action="{{ route('jobs.apply', $job) }}" enctype="multipart/form-data">
                                         @csrf
                                         <div class="mb-3">
-                                            <label for="cover_letter" class="form-label">Cover Letter *</label>
+                                            <label for="cover_letter" class="form-label">Cover Letter *
+                                                <small class="text-muted">(minimum 100 characters)</small>
+                                            </label>
                                             <textarea class="form-control" id="cover_letter" name="cover_letter" rows="5" required></textarea>
                                         </div>
                                         <div class="mb-3">

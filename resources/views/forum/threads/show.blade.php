@@ -6,25 +6,43 @@
         {{ $thread->title }}
     </h2>
 
-    @can('update', $thread)
+    @canany(['update', 'delete'], $thread)
     <div class="d-flex gap-2">
-        <a href="{{ route('forum.threads.edit', $thread) }}" class="btn btn-primary btn-sm">
-            Edit
-        </a>
-        <form action="{{ route('forum.threads.destroy', $thread) }}" method="POST" class="d-inline">
-            @csrf
-            @method('DELETE')
-            <button type="submit" class="btn btn-danger btn-sm"
-                    onclick="return confirm('Are you sure you want to delete this thread?')">
-                Delete
-            </button>
-        </form>
+        @can('update', $thread)
+            <a href="{{ route('forum.threads.edit', $thread) }}" class="btn btn-primary btn-sm">
+                Edit
+            </a>
+        @endcan
+        @can('delete', $thread)
+            <form action="{{ route('forum.threads.destroy', $thread) }}" method="POST" class="d-inline">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="btn btn-danger btn-sm"
+                        onclick="return confirm('Are you sure you want to delete this thread?')">
+                    Delete
+                </button>
+            </form>
+        @endcan
     </div>
-    @endcan
+    @endcanany
 </div>
 @endsection
 
 @section('content')
+{{-- Flash Messages --}}
+@if(session('success'))
+    <div class="alert alert-success alert-dismissible fade show mt-3" role="alert">
+        <i class="fa-solid fa-circle-check me-2"></i> {{ session('success') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+@endif
+@if(session('error'))
+    <div class="alert alert-danger alert-dismissible fade show mt-3" role="alert">
+        <i class="fa-solid fa-triangle-exclamation me-2"></i> {{ session('error') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+@endif
+
 @php($subscriberCount = $thread->subscribers()->count())
 <div class="row justify-content-center py-4">
     <div class="col-12 col-md-8">
@@ -60,7 +78,7 @@
                     <div>
                         <h5 class="card-title fw-bold">{{ $thread->title }}</h5>
                         <p class="card-subtitle text-muted small">
-                            Posted by {{ $thread->author->name }} in
+                            Posted by {{ $thread->author?->name ?? 'Former member' }} in
                             <a href="{{ route('forum.categories.show', $thread->category) }}" class="link-primary">
                                 {{ $thread->category->name }}
                             </a>
@@ -85,29 +103,33 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between mb-2">
                         <div>
-                            <p class="fw-bold mb-0">{{ $post->author->name }}</p>
+                            <p class="fw-bold mb-0">{{ $post->author?->name ?? 'Former member' }}</p>
                             <small class="text-muted">{{ $post->created_at->diffForHumans() }}</small>
                         </div>
-                        @can('update', $post)
-                            <div class="d-flex gap-2">
+                        @canany(['update', 'delete'], $post)
+                        <div class="d-flex gap-2">
+                            @can('update', $post)
                                 <a href="{{ route('forum.posts.edit', $post) }}" class="link-primary small">Edit</a>
+                            @endcan
+                            @can('delete', $post)
                                 <form action="{{ route('forum.posts.destroy', $post) }}" method="POST" class="d-inline">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn btn-link text-danger p-0 small"
+                                    <button type="submit" class="btn btn-link p-0 m-0 small"
                                             onclick="return confirm('Are you sure you want to delete this post?')">
                                         Delete
                                     </button>
                                 </form>
-                            </div>
-                        @endcan
+                            @endcan
+                        </div>
+                        @endcanany
                     </div>
                     <p class="card-text">{!! nl2br(e($post->content)) !!}</p>
                 </div>
             </div>
         @endforeach
 
-        {{ $posts->links() }}
+        {{ $posts->links('pagination::bootstrap-5') }}
 
         <!-- Reply Form -->
         @can('create', [App\Models\ForumPost::class, $thread])

@@ -70,26 +70,26 @@
 
 @push('scripts')
 <script>
-    // Fetch assigned permissions when role is selected
-    document.getElementById('role_id').addEventListener('change', function() {
-        const roleId = this.value;
-        if (!roleId) return;
+document.getElementById('role_id').addEventListener('change', function() {
+    const roleId = this.value;
+    if (!roleId) return;
 
-        fetch(`/admin/permissions/${roleId}`)
-            .then(response => response.json())
-            .then(data => {
-                // Reset all checkboxes
-                document.querySelectorAll('input[name="permissions[]"]').forEach(cb => cb.checked = false);
+    // Reset all checkboxes first
+    document.querySelectorAll('input[name="permissions[]"]').forEach(cb => cb.checked = false);
 
-                // Check permissions assigned to role
-                if (data.permissions && Array.isArray(data.permissions)) {
-                    data.permissions.forEach(permissionId => {
-                        const checkbox = document.getElementById(`permission-${permissionId}`);
-                        if (checkbox) checkbox.checked = true;
-                    });
-                }
-            })
-            .catch(() => alert('⚠️ Failed to fetch role permissions. Please try again.'));
-    });
+    fetch(`/admin/permissions/${roleId}`)
+        .then(response => {
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            return response.json();
+        })
+        .then(data => {
+            if (!data.permissions || !Array.isArray(data.permissions)) return;
+            data.permissions.forEach(permissionId => {
+                const checkbox = document.getElementById(`permission-${permissionId}`);
+                if (checkbox) checkbox.checked = true;
+            });
+        })
+        .catch(() => alert('Failed to fetch role permissions. Please try again.'));
+});
 </script>
 @endpush

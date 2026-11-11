@@ -3,12 +3,26 @@
 @section('header')
 <div class="d-flex justify-content-between align-items-center">
     <h2 class="fw-semibold text-primary mb-0">
-        <i class="fa-solid fa-user-graduate me-2"></i> Student Dashboard
+        <i class="bi bi-mortarboard-fill me-2"></i> Student Dashboard
     </h2>
 </div>
 @endsection
 
 @section('content')
+{{-- Flash Messages --}}
+@if(session('success'))
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i> {{ session('success') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+@endif
+@if(session('error'))
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i> {{ session('error') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+@endif
+
 <div class="row g-4">
     <!-- Profile Summary -->
     <div class="col-md-8">
@@ -46,7 +60,7 @@
                 <div class="list-group">
                     @can('view-events')
                     <a href="{{ route('events.index') }}" class="list-group-item list-group-item-action d-flex align-items-start">
-                        <i class="fa-solid fa-calendar-days text-primary me-3 fs-4"></i>
+                        <i class="bi bi-calendar-event text-primary me-3 fs-4"></i>
                         <div>
                             <div class="fw-medium">View Upcoming Events</div>
                             <small class="text-muted">See alumni and career events</small>
@@ -55,7 +69,7 @@
                     @endcan
 
                     <a href="{{ route('jobs.index') }}" class="list-group-item list-group-item-action d-flex align-items-start">
-                        <i class="fa-solid fa-briefcase text-success me-3 fs-4"></i>
+                        <i class="bi bi-briefcase-fill text-success me-3 fs-4"></i>
                         <div>
                             <div class="fw-medium">Browse Job Opportunities</div>
                             <small class="text-muted">Find jobs and internships</small>
@@ -63,7 +77,7 @@
                     </a>
 
                     <a href="{{ route('student.profile') }}" class="list-group-item list-group-item-action d-flex align-items-start">
-                        <i class="fa-solid fa-user-edit text-warning me-3 fs-4"></i>
+                        <i class="bi bi-person-lines-fill text-warning me-3 fs-4"></i>
                         <div>
                             <div class="fw-medium">Update Profile</div>
                             <small class="text-muted">Keep your information current</small>
@@ -72,7 +86,7 @@
 
                     @can('view-forums')
                     <a href="{{ route('forum.index') }}" class="list-group-item list-group-item-action d-flex align-items-start">
-                        <i class="fa-solid fa-comments text-info me-3 fs-4"></i>
+                        <i class="bi bi-chat-dots text-info me-3 fs-4"></i>
                         <div>
                             <div class="fw-medium">Visit Discussion Forum</div>
                             <small class="text-muted">Connect with peers and alumni</small>
@@ -96,7 +110,7 @@
                 <div class="card-body">
                     <h5 class="card-title text-primary">{{ $event->title }}</h5>
                     <p class="text-muted small mb-2">
-                        <i class="fa-regular fa-clock me-1"></i>
+                        <i class="bi bi-clock me-1"></i>
                         {{ $event->start->format('M j, Y g:i A') }}
                     </p>
                     <p class="text-truncate-2 text-secondary small">{{ $event->description }}</p>
@@ -129,7 +143,7 @@
                     <h5 class="card-title text-success">{{ $job->title }}</h5>
                     <p class="small text-muted mb-1">{{ $job->company }}</p>
                     <p class="small text-secondary mb-2">
-                        <i class="fa-solid fa-location-dot me-1"></i> {{ $job->location }}
+                        <i class="bi bi-geo-alt me-1"></i> {{ $job->location }}
                         <span class="mx-1">•</span> {{ $job->employment_type }}
                     </p>
                     <a href="{{ route('jobs.show', $job) }}" class="btn btn-sm btn-outline-success mt-2">
