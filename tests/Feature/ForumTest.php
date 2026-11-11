@@ -361,11 +361,17 @@ class ForumTest extends TestCase
 
         $this->actingAs($author)
             ->delete(route('forum.posts.destroy', $post))
-            ->assertRedirect();
+            ->assertRedirect()
+            ->assertSessionHas('success', 'Post deleted successfully');
 
         // ForumPost uses SoftDeletes: the row stays in the table
         $this->assertSoftDeleted($post);
-        // Soft-deleted threads must not resurface
-        $this->assertNull(ForumThread::find($thread->id));
+
+        // The thread itself must survive with zero replies —
+        // deleting a reply must never destroy the original author's content.
+        $thread->refresh();
+        $this->assertNotNull(ForumThread::find($thread->id));
+        $this->assertNull($thread->deleted_at);
+        $this->assertSame(0, $thread->posts()->count());
     }
 }
