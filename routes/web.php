@@ -150,8 +150,10 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     |----------------------------
     */
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.all');
+    Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount'])->name('notifications.unreadCount');
     Route::post('/notifications/mark-as-read/{id}', [NotificationController::class, 'markAsRead'])->name('notifications.markAsRead');
     Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.markAllAsRead');
+    Route::delete('/notifications/{id}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
 
     /*
     |-----------------------------
@@ -200,7 +202,7 @@ Route::middleware(['auth', 'verified', 'approved'])->group(function () {
     |-----------------------------
     */
     Route::middleware(['role:admin'])->prefix('admin')->name('admin.')->group(function () {
-        Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
+        Route::get('/dashboard', [DashboardController::class, 'adminDashboard'])->name('dashboard');
         Route::get('/pending-approvals', [AdminController::class, 'pendingApprovals'])->name('pending-approvals');
 
         // Single approve/reject pair (POST) — the pending-approvals
